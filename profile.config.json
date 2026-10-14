@@ -1,0 +1,164 @@
+{
+  "username": "vamshisaideep9",
+  "name": "Vamshi Sai Deep",
+  "title": "AI & Full-Stack Engineer",
+  "tagline": "I build production AI, full-stack web & Android apps — and rank them on Google.",
+  "status": "Available for full-time roles & freelance",
+  "roles": [
+    "Engineering advanced RAG — with evals, not vibes",
+    "Building LLM agents that take real actions",
+    "Shipping full-stack apps with FastAPI + Next.js",
+    "Crafting Android apps in Kotlin & React Native",
+    "Ranking sites on Google with SEO + AI workflows"
+  ],
+  "terminal": [
+    {
+      "cmd": "whoami",
+      "out": [
+        "Vamshi Sai Deep — AI & Full-Stack Engineer. Web, mobile and AI, idea → production."
+      ]
+    },
+    {
+      "cmd": "cat stack.yaml",
+      "out": [
+        "ai:        advanced RAG · agents · tool calling · MCP · evals",
+        "backend:   FastAPI · PostgreSQL · Redis · REST & async APIs",
+        "frontend:  Next.js · TypeScript · Tailwind CSS · shadcn/ui",
+        "mobile:    Kotlin (Android) · React Native",
+        "cloud:     Docker · AWS · Google Cloud · DigitalOcean",
+        "seo:       technical SEO · keyword strategy · ranking on Google",
+        "ai-dev:    Claude Code · Codex — agentic, review-first workflow"
+      ]
+    },
+    {
+      "cmd": "git log --oss --recent",
+      "out": [
+        "⎇ arc53/DocsGPT — proxy support for HTTP tools (PR #1958)"
+      ]
+    },
+    {
+      "cmd": "status",
+      "out": [
+        "● open to full-time roles and freelance builds"
+      ]
+    }
+  ],
+  "services": [
+    {
+      "title": "Advanced RAG & LLM Apps",
+      "icon": "rag",
+      "points": [
+        "Hybrid search, re-ranking, evals",
+        "Chat over docs, data & APIs",
+        "Guardrails, cost & latency control"
+      ]
+    },
+    {
+      "title": "AI Agents & Automation",
+      "icon": "agent",
+      "points": [
+        "Tool-calling & multi-agent flows",
+        "Voice & chat agents for business",
+        "Workflow automation, end to end"
+      ]
+    },
+    {
+      "title": "Full-stack Web Apps",
+      "icon": "stack",
+      "points": [
+        "FastAPI · Postgres · Redis",
+        "Next.js · Tailwind · shadcn/ui",
+        "Dockerised, deployed on AWS/GCP/DO"
+      ]
+    },
+    {
+      "title": "Android & Mobile Apps",
+      "icon": "mobile",
+      "points": [
+        "Native Android with Kotlin",
+        "Cross-platform with React Native",
+        "API-connected, store-ready builds"
+      ]
+    },
+    {
+      "title": "SEO & Search Growth",
+      "icon": "web",
+      "points": [
+        "Technical SEO & Core Web Vitals",
+        "Keyword research & content strategy",
+        "Ranking sites on Google, measurably"
+      ]
+    },
+    {
+      "title": "AI-assisted Engineering",
+      "icon": "spark",
+      "points": [
+        "Claude Code & Codex workflows",
+        "Agentic coding with human review",
+        "Ship faster without cutting quality"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "slug": "docsgpt",
+      "label": "Open source",
+      "title": "DocsGPT · Tool Proxy Support",
+      "role": "Contributor — arc53/DocsGPT",
+      "desc": "Added global and per-tool proxy support for HTTP tools (API, web reader, Telegram, Brave) in a widely used open-source RAG assistant, with docs.",
+      "tags": [
+        "Python",
+        "LLM tools",
+        "RAG",
+        "OSS"
+      ],
+      "metric": "PR #1958",
+      "url": "https://github.com/arc53/DocsGPT/pull/1958"
+    },
+    {
+      "slug": "fintech-dashboard",
+      "label": "Client build",
+      "title": "Dhanadhara Fintech Platform",
+      "role": "Engineer — brollysolutions",
+      "desc": "Customer dashboards, a theming system and support workflows for a financial-services platform, shipped iteratively through reviewed PRs.",
+      "tags": [
+        "React",
+        "Dashboards",
+        "UI systems",
+        "Fintech"
+      ],
+      "metric": "6+ PRs",
+      "url": "https://github.com/brollysolutions/client1"
+    },
+    {
+      "slug": "ml-projects",
+      "label": "Machine learning",
+      "title": "Machine Learning Projects",
+      "role": "Author — end-to-end notebooks",
+      "desc": "Supervised and unsupervised ML pipelines: feature engineering, model selection and evaluation on real-world datasets.",
+      "tags": [
+        "Python",
+        "scikit-learn",
+        "Pandas",
+        "Jupyter"
+      ],
+      "metric": "Notebooks",
+      "url": "https://github.com/vamshisaideep9/Machine-Learning-Projects"
+    },
+    {
+      "slug": "data-science",
+      "label": "Data science",
+      "title": "Data Science Projects",
+      "role": "Author — analytics & modeling",
+      "desc": "EDA, statistical analysis and predictive modeling built around real business questions, with clear visual storytelling.",
+      "tags": [
+        "Python",
+        "EDA",
+        "Visualization",
+        "Stats"
+      ],
+      "metric": "Notebooks",
+      "url": "https://github.com/vamshisaideep9/Datascience-projects"
+    }
+  ]
+}

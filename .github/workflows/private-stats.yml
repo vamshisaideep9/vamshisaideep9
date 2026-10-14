@@ -1,0 +1,37 @@
+name: Stats incl. private & org repos
+
+# Optional. Needs a personal access token saved as repo secret METRICS_TOKEN (see SETUP.md §8).
+# Only aggregate numbers are published — never code. Skips cleanly if the secret is missing.
+on:
+  schedule:
+    - cron: "45 0 * * *"   # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check token
+        id: tok
+        env:
+          T: ${{ secrets.METRICS_TOKEN }}
+        run: echo "ok=$([ -n "$T" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - uses: lowlighter/metrics@latest
+        if: steps.tok.outputs.ok == 'true'
+        with:
+          token: ${{ secrets.METRICS_TOKEN }}
+          filename: metrics/stats.svg
+          template: classic
+          base: header, activity, community, repositories
+          repositories_affiliations: owner, collaborator, organization_member
+          config_timezone: Asia/Kolkata
+          plugin_languages: yes
+          plugin_languages_sections: most-used
+          plugin_languages_details: percentage
+          plugin_languages_ignored: jupyter notebook, html, css, powershell
+          plugin_languages_limit: 8
