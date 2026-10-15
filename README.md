@@ -10,12 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://www.linkedin.com/in/YOUR-LINKEDIN"><img src="https://img.shields.io/badge/LinkedIn-f4f4f5?style=for-the-badge&logo=linkedin&logoColor=18181b" alt="LinkedIn"/></a>
-  <a href="mailto:YOUR-EMAIL"><img src="https://img.shields.io/badge/Email-f4f4f5?style=for-the-badge&logo=gmail&logoColor=18181b" alt="Email"/></a>
+  <a href="https://www.linkedin.com/in/vamshisaideep"><img src="https://img.shields.io/badge/LinkedIn-f4f4f5?style=for-the-badge&logo=linkedin&logoColor=18181b" alt="LinkedIn"/></a>
+  <a href="mailto:vamshisaideepdesa@gmail.com"><img src="https://img.shields.io/badge/Email-f4f4f5?style=for-the-badge&logo=gmail&logoColor=18181b" alt="Email"/></a>
   <a href="https://YOUR-PORTFOLIO"><img src="https://img.shields.io/badge/Portfolio-f4f4f5?style=for-the-badge&logo=vercel&logoColor=18181b" alt="Portfolio"/></a>
   <a href="https://YOUR-RESUME-LINK"><img src="https://img.shields.io/badge/Résumé-f4f4f5?style=for-the-badge&logo=readdotcv&logoColor=18181b" alt="Résumé"/></a>
-  <a href="https://orcid.org/0009-0001-2251-1368"><img src="https://img.shields.io/badge/ORCID-f4f4f5?style=for-the-badge&logo=orcid&logoColor=18181b" alt="ORCID"/></a>
-  <a href="https://cal.com/YOUR-HANDLE"><img src="https://img.shields.io/badge/Book_a_call-4f46e5?style=for-the-badge&logo=googlecalendar&logoColor=ffffff" alt="Book a call"/></a>
+  <a href="https://cal.com/+919059261395"><img src="https://img.shields.io/badge/Book_a_call-4f46e5?style=for-the-badge&logo=googlecalendar&logoColor=ffffff" alt="Book a call"/></a>
 </p>
 
 <img src="assets/divider.svg" width="100%" alt=""/>
