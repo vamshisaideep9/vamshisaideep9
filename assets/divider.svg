@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="24" viewBox="0 0 1200 24" role="img" aria-label="divider"><title>divider</title><style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style><defs>
+<linearGradient id="aurora" x1="0" x2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset=".5" stop-color="#7c3aed"/><stop offset="1" stop-color="#0891b2"/></linearGradient>
+<linearGradient id="hair" x1="0" x2="1"><stop offset="0" stop-color="#a1a1aa" stop-opacity="0"/><stop offset=".5" stop-color="#a1a1aa" stop-opacity=".55"/><stop offset="1" stop-color="#a1a1aa" stop-opacity="0"/></linearGradient>
+<linearGradient id="glint" x1="0" x2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity="0"/><stop offset=".5" stop-color="#7c3aed" stop-opacity=".6"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></linearGradient>
+<linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#09090b"/><stop offset="1" stop-color="#3f3f46"/></linearGradient>
+<linearGradient id="shine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="260" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/><animateTransform attributeName="gradientTransform" type="translate" values="-400 0;1600 0" dur="6s" repeatCount="indefinite"/></linearGradient>
+<filter id="blur" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="48"/></filter>
+<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#18181b" opacity=".08"/></pattern>
+</defs><rect x="0" y="11.5" width="1200" height="1" fill="url(#hair)"/>
+    <rect x="-160" y="11" width="160" height="2" rx="1" fill="url(#aurora)"><animate attributeName="x" values="-160;1200" dur="6s" repeatCount="indefinite"/></rect></svg>
