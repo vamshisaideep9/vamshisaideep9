@@ -6,7 +6,7 @@
 ════════════════════════════════════════════════════════════════════════ -->
 
 <p align="center">
-  <img src="assets/header.svg" width="100%" alt="Vamshi Sai Deep — AI Engineer"/>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/header.svg"/><img src="assets/header.svg" width="100%" alt="Vamshi Sai Deep — AI Engineer"/></picture>
 </p>
 
 <p align="center">
@@ -17,11 +17,11 @@
   <a href="https://cal.com/+919059261395"><img src="https://img.shields.io/badge/Book_a_call-4f46e5?style=for-the-badge&logo=googlecalendar&logoColor=ffffff" alt="Book a call"/></a>
 </p>
 
-<img src="assets/divider.svg" width="100%" alt=""/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/divider.svg"/><img src="assets/divider.svg" width="100%" alt=""/></picture>
 
-<img src="assets/section-about.svg" width="100%" alt="About"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-about.svg"/><img src="assets/section-about.svg" width="100%" alt="About"/></picture>
 
-<img src="assets/terminal.svg" width="100%" alt="whoami: AI Engineer who takes AI from notebook to production"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/terminal.svg"/><img src="assets/terminal.svg" width="100%" alt="whoami: AI Engineer who takes AI from notebook to production"/></picture>
 
 <table>
 <tr>
@@ -46,20 +46,20 @@
 </tr>
 </table>
 
-<img src="assets/section-services.svg" width="100%" alt="What I build"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-services.svg"/><img src="assets/section-services.svg" width="100%" alt="What I build"/></picture>
 
-<img src="assets/services.svg" width="100%" alt="Advanced RAG · AI agents & automation · Full-stack web apps · Android & mobile · SEO & search growth · AI-assisted engineering"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/services.svg"/><img src="assets/services.svg" width="100%" alt="Advanced RAG · AI agents & automation · Full-stack web apps · Android & mobile · SEO & search growth · AI-assisted engineering"/></picture>
 
-<img src="assets/section-projects.svg" width="100%" alt="Featured work"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-projects.svg"/><img src="assets/section-projects.svg" width="100%" alt="Featured work"/></picture>
 
 <table>
 <tr>
-<td width="50%"><a href="https://github.com/arc53/DocsGPT/pull/1958"><img src="assets/project-docsgpt.svg" width="100%" alt="DocsGPT — tool proxy support"/></a></td>
-<td width="50%"><a href="https://github.com/brollysolutions/client1"><img src="assets/project-fintech-dashboard.svg" width="100%" alt="Dhanadhara fintech platform"/></a></td>
+<td width="50%"><a href="https://github.com/arc53/DocsGPT/pull/1958"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/project-docsgpt.svg"/><img src="assets/project-docsgpt.svg" width="100%" alt="DocsGPT — tool proxy support"/></picture></a></td>
+<td width="50%"><a href="https://github.com/brollysolutions/client1"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/project-fintech-dashboard.svg"/><img src="assets/project-fintech-dashboard.svg" width="100%" alt="Dhanadhara fintech platform"/></picture></a></td>
 </tr>
 <tr>
-<td width="50%"><a href="https://github.com/vamshisaideep9/Machine-Learning-Projects"><img src="assets/project-ml-projects.svg" width="100%" alt="Machine learning projects"/></a></td>
-<td width="50%"><a href="https://github.com/vamshisaideep9/Datascience-projects"><img src="assets/project-data-science.svg" width="100%" alt="Data science projects"/></a></td>
+<td width="50%"><a href="https://github.com/vamshisaideep9/Machine-Learning-Projects"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/project-ml-projects.svg"/><img src="assets/project-ml-projects.svg" width="100%" alt="Machine learning projects"/></picture></a></td>
+<td width="50%"><a href="https://github.com/vamshisaideep9/Datascience-projects"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/project-data-science.svg"/><img src="assets/project-data-science.svg" width="100%" alt="Data science projects"/></picture></a></td>
 </tr>
 </table>
 
@@ -74,7 +74,7 @@
 </details>
 -->
 
-<img src="assets/section-stack.svg" width="100%" alt="Tech stack"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-stack.svg"/><img src="assets/section-stack.svg" width="100%" alt="Tech stack"/></picture>
 
 <table align="center">
 <tr><td><b>AI &amp; LLMs</b></td><td>
@@ -96,11 +96,21 @@
 </td></tr>
 </table>
 
-<img src="assets/section-stats.svg" width="100%" alt="GitHub activity"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-stats.svg"/><img src="assets/section-stats.svg" width="100%" alt="GitHub activity"/></picture>
 
 <p align="center">
-  <img src="assets/stats.svg" width="100%" alt="GitHub stats including private and organisation repositories"/>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/stats.svg"/><img src="assets/stats.svg" width="100%" alt="GitHub stats including private and organisation repositories"/></picture>
 </p>
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/achievements.svg"/><img src="assets/achievements.svg" width="100%" alt="Achievements — tiered trophies computed from public and private activity"/></picture>
+</p>
+
+<details>
+<summary><b>📈 Weekly contribution trend</b> <sub>— click to expand</sub></summary>
+<br/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/activity.svg"/><img src="assets/activity.svg" width="100%" alt="Weekly contributions over the last 12 months"/></picture>
+</details>
 
 
 <!-- Generated daily by .github/workflows/profile-3d.yml -->
@@ -115,7 +125,7 @@
   <img src="https://raw.githubusercontent.com/vamshisaideep9/vamshisaideep9/output/snake-dark.svg" width="100%" alt="Contribution snake animation"/>
 </picture>
 
-<img src="assets/section-feed.svg" width="100%" alt="Latest writing & activity"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-feed.svg"/><img src="assets/section-feed.svg" width="100%" alt="Latest writing & activity"/></picture>
 
 <table>
 <tr>
@@ -137,10 +147,34 @@
 </tr>
 </table>
 
-<img src="assets/section-contact.svg" width="100%" alt="Let's talk"/>
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-guestbook.svg"/><img src="assets/section-guestbook.svg" width="100%" alt="Guestbook"/></picture>
 
-<a href="mailto:YOUR-EMAIL"><img src="assets/footer.svg" width="100%" alt="Let's build something intelligent — get in touch"/></a>
+<p align="center">
+  <b>Passing by? Leave your mark.</b> Click below, then press <i>Submit</i> — a GitHub Action adds your avatar to this wall within a minute.
+</p>
+<p align="center">
+  <a href="https://github.com/vamshisaideep9/vamshisaideep9/issues/new?title=guestbook%7Chi&body=Just+press+%22Create%22+%E2%80%94+your+avatar+will+be+added+to+the+guestbook+on+my+profile.+%F0%9F%91%8B"><img src="https://img.shields.io/badge/✍️_Sign_the_guestbook-4f46e5?style=for-the-badge" alt="Sign the guestbook"/></a>
+</p>
+
+<!-- GUESTBOOK:START -->
+<p align="center"><sub>No signatures yet. Be the first!</sub></p>
+<!-- GUESTBOOK:END -->
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/section-contact.svg"/><img src="assets/section-contact.svg" width="100%" alt="Let's talk"/></picture>
+
+<a href="mailto:vamshisaideepdesa@gmail.com"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/dark/footer.svg"/><img src="assets/footer.svg" width="100%" alt="Let's build something intelligent — get in touch"/></picture></a>
 
 <p align="center">
   <img src="https://komarev.com/ghpvc/?username=vamshisaideep9&label=Profile%20views&color=4f46e5&style=flat-square" alt="Profile views"/>
 </p>
+
+<details>
+<summary><sub>⚙️ How this profile works</sub></summary>
+<br/>
+
+- Every card is an SVG generated by [`scripts/build_assets.py`](scripts/build_assets.py) from [`profile.config.json`](profile.config.json), with light and dark versions.
+- Stats include private and organisation work: [`scripts/fetch_stats.py`](scripts/fetch_stats.py) runs daily with a personal token and publishes **only totals** — no repo names, no code.
+- The guestbook is issue-driven: opening a `guestbook|hi` issue triggers [a workflow](.github/workflows/guestbook.yml) that adds your avatar.
+- The snake, 3D graph and activity feed are refreshed by scheduled GitHub Actions.
+
+</details>

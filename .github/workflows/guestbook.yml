@@ -1,0 +1,52 @@
+name: Guestbook
+
+# Someone clicks "Sign the guestbook" in the README → a pre-filled issue titled "guestbook|hi" is opened.
+# This adds the issue author's avatar to the README wall, thanks them and closes the issue.
+# Only the author's login (validated in scripts/guestbook.py) is used — never the title or body text.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: readme-writer
+  cancel-in-progress: false
+
+jobs:
+  sign:
+    if: startsWith(github.event.issue.title, 'guestbook|')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Add visitor
+        env:
+          LOGIN: ${{ github.event.issue.user.login }}
+        run: python scripts/guestbook.py "$LOGIN"
+
+      - name: Commit
+        env:
+          LOGIN: ${{ github.event.issue.user.login }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md guestbook.json
+          git diff --staged --quiet && exit 0
+          git commit -m "guestbook: signed by @$LOGIN"
+          for i in 1 2 3; do git pull --rebase -q && git push && exit 0; sleep 5; done
+          exit 1
+
+      - name: Thank and close
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue close "$ISSUE" --repo "$REPO" --comment "Thanks for signing! 👋 Your avatar is now on the wall: https://github.com/${REPO%%/*}"

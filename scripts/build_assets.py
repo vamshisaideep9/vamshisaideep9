@@ -8,7 +8,7 @@ Usage:  pip install fonttools brotli && python scripts/build_assets.py
 Fonts are subset per SVG and embedded as base64 woff2, so they render inside GitHub's <img> sandbox
 (GitHub strips external resources and scripts, but keeps CSS + SMIL animation).
 """
-import base64, io, json, os, textwrap
+import base64, io, json, os, re, textwrap
 from xml.sax.saxutils import escape
 from fontTools import subset
 from fontTools.ttLib import TTFont
@@ -73,11 +73,22 @@ def svg(w, h, body, css, title):
             f"<title>{escape(title)}</title><style>{css}{BASE_CSS}</style><defs>{DEFS}</defs>{body}</svg>")
 
 
+DARK = {  # light token → GitHub-dark counterpart
+    "#ffffff": "#0d1117", "#f8fafc": "#161b22", "#e4e4e7": "#30363d", "#18181b": "#e6edf3", "#52525b": "#9da7b3",
+    "#a1a1aa": "#6e7681", "#09090b": "#ffffff", "#3f3f46": "#b1bac4", "#4f46e5": "#818cf8", "#7c3aed": "#a78bfa",
+    "#0891b2": "#22d3ee", "#059669": "#34d399", "#b45309": "#fbbf24", "#f1f5f9": "#161b22", "#e0e7ff": "#1e1b4b",
+    "#a5b4fc": "#3730a3", "#4338ca": "#a5b4fc",
+}
+
+
 def write(name, content):
-    os.makedirs(OUT, exist_ok=True)
-    with open(os.path.join(OUT, name), "w", encoding="utf-8") as fh:
-        fh.write(content)
-    print(f"  ✓ assets/{name}  ({len(content)//1024} KB)")
+    """Writes the light asset to assets/ and a dark-palette twin to assets/dark/."""
+    os.makedirs(os.path.join(OUT, "dark"), exist_ok=True)
+    dark = re.sub(r"#[0-9a-fA-F]{6}\b", lambda m: DARK.get(m.group(0).lower(), m.group(0)), content)
+    for path, data in ((os.path.join(OUT, name), content), (os.path.join(OUT, "dark", name), dark)):
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(data)
+    print(f"  ✓ assets/{name} + dark  ({len(content)//1024} KB)")
 
 
 def card(w, h, r=18, glint=True, dur=7):
@@ -232,7 +243,7 @@ def terminal():
 # ── 3. SECTION HEADINGS ───────────────────────────────────────────────────
 SECTIONS = [("about", "01", "About"), ("services", "02", "What I build"), ("projects", "03", "Featured work"),
             ("stack", "04", "Tech stack"), ("stats", "05", "GitHub activity"), ("feed", "06", "Latest writing & activity"),
-            ("contact", "07", "Let's talk")]
+            ("guestbook", "07", "Guestbook"), ("contact", "08", "Let's talk")]
 
 
 def section(slug, num, label):
@@ -448,9 +459,104 @@ def stats():
                            ", ".join(f"{v} {k.lower()}" for v, k, _ in kpis)))
 
 
+# ── 8. ACHIEVEMENTS (tiered trophies from stats.json) ─────────────────────
+def achievements():
+    if not STATS:
+        return
+    st = STATS
+
+    def tier(v, s_, a_, b_):
+        return "S" if v >= s_ else "A" if v >= a_ else "B" if v >= b_ else "C"
+
+    def short(v):
+        return f"{v/1000:.1f}k".replace(".0k", "k") if v >= 1000 else str(v)
+    nlang = len([l for l in st["languages"] if l["pct"] >= .5])
+    items = [
+        ("Committer", short(st["commits"]), "commits", tier(st["commits"], 2000, 1000, 300)),
+        ("Shipper", short(st["prs_merged"]), "PRs merged", tier(st["prs_merged"], 500, 200, 50)),
+        ("Builder", short(st["repos"]), "repositories", tier(st["repos"], 100, 50, 20)),
+        ("Under NDA", short(st["private_repos"]), "private repos", tier(st["private_repos"], 30, 15, 5)),
+        ("Marathon", f"{st['streak_longest']}d", "longest streak", tier(st["streak_longest"], 60, 30, 14)),
+        ("Polyglot", str(nlang), "languages", tier(nlang, 6, 4, 3)),
+    ]
+    W, H, n, gap = 1200, 236, len(items), 16
+    cw = (W - gap * (n - 1)) / n
+    tcol = {"S": AMBER, "A": VIOLET, "B": INDIGO, "C": CYAN}
+    css = fonts_css({("Geist", 600): "".join(i[1] + i[3] for i in items), ("Geist", 500): "".join(i[0] for i in items),
+                     ("GeistMono", 400): "".join(i[2] for i in items)}) + f"""
+    .v{{font:600 30px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-.8px}} .k{{font:500 15px 'Geist',sans-serif;fill:{TEXT}}}
+    .s{{font:400 11.5px 'GeistMono',monospace;fill:{MUTED}}} .t{{font:600 15px 'Geist',sans-serif}}
+    .pop{{animation:pop .7s cubic-bezier(.2,.7,.2,1.3) both}} @keyframes pop{{from{{opacity:0;transform:scale(.85) translateY(8px)}}to{{opacity:1;transform:none}}}}
+    .spin{{animation:spin 8s linear infinite;transform-box:fill-box;transform-origin:center}} @keyframes spin{{to{{transform:rotate(360deg)}}}}"""
+    out = []
+    for i, (k, v, sub, t) in enumerate(items):
+        x, c, cx = i * (cw + gap), tcol[t], cw / 2
+        out.append(f"""<g transform="translate({x:.0f},0)"><g class="pop" style="animation-delay:{i*.09:.2f}s;transform-origin:{cx:.0f}px 100px">
+          <defs><clipPath id="ac{i}"><rect width="{cw:.0f}" height="{H}" rx="16"/></clipPath></defs>
+          <g clip-path="url(#ac{i})">{card(round(cw), H, 16, dur=7 + i)}{tracer(round(cw), H, 16, dur=8, phase=i*1.3)}
+            <ellipse cx="{cx:.0f}" cy="40" rx="80" ry="50" fill="{c}" opacity=".1" filter="url(#blur)"/></g>
+          <circle cx="{cx:.0f}" cy="66" r="34" fill="{c}" fill-opacity=".08"/>
+          <circle class="spin" cx="{cx:.0f}" cy="66" r="34" fill="none" stroke="{c}" stroke-width="2" stroke-dasharray="60 154" stroke-linecap="round"/>
+          <circle cx="{cx:.0f}" cy="66" r="25" fill="{CARD}" stroke="{c}" stroke-opacity=".35"/>
+          <text class="t" x="{cx:.0f}" y="71.5" text-anchor="middle" fill="{c}">{t}</text>
+          <text class="v" x="{cx:.0f}" y="146" text-anchor="middle">{escape(v)}</text>
+          <text class="k" x="{cx:.0f}" y="176" text-anchor="middle">{escape(k)}</text>
+          <text class="s" x="{cx:.0f}" y="200" text-anchor="middle">{escape(sub)}</text></g></g>""")
+    write("achievements.svg", svg(W, H, "".join(out), css,
+                                  "Achievements: " + ", ".join(f"{k} ({v} {s_}, tier {t})" for k, v, s_, t in items)))
+
+
+# ── 9. WEEKLY ACTIVITY CHART ──────────────────────────────────────────────
+def activity():
+    if not STATS:
+        return
+    from datetime import date, timedelta
+    cal, start = STATS["calendar"], date.fromisoformat(STATS["calendar_start"])
+    weeks = [sum(cal[i:i + 7]) for i in range(0, len(cal), 7)]
+    W, H = 1200, 340
+    x0, x1, y0, y1 = 64, W - 40, 70, H - 60
+    nice = max(40, -(-max(weeks) // 40) * 40)
+    pts = [(x0 + i * (x1 - x0) / (len(weeks) - 1), y1 - w * (y1 - y0) / nice) for i, w in enumerate(weeks)]
+    line = f"M{pts[0][0]:.1f},{pts[0][1]:.1f}"
+    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
+        mx = (ax + bx) / 2
+        line += f" C{mx:.1f},{ay:.1f} {mx:.1f},{by:.1f} {bx:.1f},{by:.1f}"
+    area = line + f" L{x1},{y1} L{x0},{y1} Z"
+    pk = max(range(len(weeks)), key=lambda i: weeks[i])
+    px, py = pts[pk]
+    grid = "".join(f'<line x1="{x0}" y1="{y1 - f*(y1-y0):.0f}" x2="{x1}" y2="{y1 - f*(y1-y0):.0f}" stroke="{LINE}" stroke-dasharray="3 5"/>'
+                   f'<text class="ax" x="{x0 - 12}" y="{y1 - f*(y1-y0) + 4:.0f}" text-anchor="end">{int(nice*f)}</text>'
+                   for f in (0, .25, .5, .75, 1))
+    months, last = [], None
+    for i in range(len(weeks)):
+        d = start + timedelta(days=i * 7)
+        if d.month != last and i < len(weeks) - 2:
+            months.append(f'<text class="ax" x="{pts[i][0]:.0f}" y="{y1 + 26}" text-anchor="middle">{d.strftime("%b")}</text>')
+            last = d.month
+    title, sub, peak = "Weekly contributions", "last 12 months · public + private", f"peak {weeks[pk]} / week"
+    css = fonts_css({("Geist", 600): title, ("GeistMono", 400): sub + peak + "JanFebMarAprMayJunJulAugSepOctNovDec"}) + f"""
+    .h{{font:600 18px 'Geist',sans-serif;fill:{TEXT}}} .sub{{font:400 12.5px 'GeistMono',monospace;fill:{MUTED}}}
+    .ax{{font:400 11px 'GeistMono',monospace;fill:{DIM}}} .pk{{font:400 12px 'GeistMono',monospace;fill:{TEXT}}}
+    .draw{{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .2s forwards}} @keyframes draw{{to{{stroke-dashoffset:0}}}}
+    .fade{{animation:fade 1.2s ease 1.4s both}} @keyframes fade{{from{{opacity:0}}to{{opacity:1}}}}
+    .ring{{animation:ring 2s ease-out 2.4s infinite;transform-box:fill-box;transform-origin:center}} @keyframes ring{{from{{transform:scale(1);opacity:.6}}to{{transform:scale(3.2);opacity:0}}}}
+    @media (prefers-reduced-motion: reduce){{.draw{{stroke-dashoffset:0}}}}"""
+    body = f"""
+    <defs><clipPath id="wc"><rect width="{W}" height="{H}" rx="18"/></clipPath>
+      <linearGradient id="fillg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INDIGO}" stop-opacity=".28"/><stop offset="1" stop-color="{INDIGO}" stop-opacity="0"/></linearGradient></defs>
+    <g clip-path="url(#wc)">{card(W, H, 18)}<rect width="{W}" height="{H}" fill="url(#dots)" opacity=".5"/></g>
+    <text class="h" x="32" y="40">{title}</text><text class="sub" x="{W - 32}" y="40" text-anchor="end">{escape(sub)}</text>
+    {grid}{''.join(months)}
+    <path class="fade" d="{area}" fill="url(#fillg)"/>
+    <path class="draw" d="{line}" fill="none" stroke="url(#aurora)" stroke-width="2.5" stroke-linecap="round" pathLength="1"/>
+    <g class="fade"><circle class="ring" cx="{px:.1f}" cy="{py:.1f}" r="5" fill="{VIOLET}"/><circle cx="{px:.1f}" cy="{py:.1f}" r="5" fill="{VIOLET}" stroke="{CARD}" stroke-width="2"/>
+      <text class="pk" x="{min(px + 12, W - 140):.0f}" y="{py - 12:.0f}">{escape(peak)}</text></g>"""
+    write("activity.svg", svg(W, H, body, css, f"Weekly contributions over the last 12 months, peak {weeks[pk]} per week"))
+
+
 if __name__ == "__main__":
     print("Building assets…")
-    header(); terminal(); services(); divider(); footer(); stats()
+    header(); terminal(); services(); divider(); footer(); stats(); achievements(); activity()
     for s in SECTIONS: section(*s)
     for i, p in enumerate(CFG["projects"]): project(p, i)
     print("Done.")
