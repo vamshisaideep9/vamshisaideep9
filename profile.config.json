@@ -11,38 +11,6 @@
     "Crafting Android apps in Kotlin & React Native",
     "Ranking sites on Google with SEO + AI workflows"
   ],
-  "terminal": [
-    {
-      "cmd": "whoami",
-      "out": [
-        "Vamshi Sai Deep — AI & Full-Stack Engineer. Web, mobile and AI, idea → production."
-      ]
-    },
-    {
-      "cmd": "cat stack.yaml",
-      "out": [
-        "ai:        advanced RAG · agents · tool calling · MCP · evals",
-        "backend:   FastAPI · PostgreSQL · Redis · REST & async APIs",
-        "frontend:  Next.js · TypeScript · Tailwind CSS · shadcn/ui",
-        "mobile:    Kotlin (Android) · React Native",
-        "cloud:     Docker · AWS · Google Cloud · DigitalOcean",
-        "seo:       technical SEO · keyword strategy · ranking on Google",
-        "ai-dev:    Claude Code · Codex — agentic, review-first workflow"
-      ]
-    },
-    {
-      "cmd": "git log --oss --recent",
-      "out": [
-        "⎇ arc53/DocsGPT — proxy support for HTTP tools (PR #1958)"
-      ]
-    },
-    {
-      "cmd": "status",
-      "out": [
-        "● open to full-time roles and freelance builds"
-      ]
-    }
-  ],
   "services": [
     {
       "title": "Advanced RAG & LLM Apps",
@@ -159,6 +127,129 @@
       ],
       "metric": "Notebooks",
       "url": "https://github.com/vamshisaideep9/Datascience-projects"
+    }
+  ],
+  "location": "Remote · IST (UTC+5:30)",
+  "facts": [
+    {
+      "k": "Focus",
+      "v": "Advanced RAG · LLM agents"
+    },
+    {
+      "k": "Ships",
+      "v": "Web · Android · APIs"
+    },
+    {
+      "k": "Works",
+      "v": "Remote · IST (UTC+5:30)"
+    }
+  ],
+  "about": {
+    "statement": [
+      "I take AI from *notebook to production* —",
+      "retrieval that's measured, agents that act,",
+      "and the web & Android products around them,",
+      "*built to be found* on Google."
+    ],
+    "recruiters": [
+      "AI & full-stack engineer: RAG, agents, web, Android",
+      "FastAPI · PostgreSQL · Redis · Next.js · Kotlin",
+      "Open-source contributor to DocsGPT",
+      "Open to full-time roles · remote or hybrid"
+    ],
+    "clients": [
+      "One engineer for AI + web + Android + SEO",
+      "Working prototypes in days, reviewed by hand",
+      "Sites that rank on Google, not just look good",
+      "Clear scope and weekly demos"
+    ]
+  },
+  "stack": [
+    {
+      "layer": "Intelligence",
+      "items": [
+        "Python",
+        "PyTorch",
+        "LangChain",
+        "OpenAI",
+        "Claude",
+        "Hugging Face",
+        "MCP",
+        "Vector search"
+      ]
+    },
+    {
+      "layer": "Backend",
+      "items": [
+        "FastAPI",
+        "PostgreSQL",
+        "Redis",
+        "Node.js",
+        "REST & async APIs"
+      ]
+    },
+    {
+      "layer": "Interface",
+      "items": [
+        "Next.js",
+        "React",
+        "TypeScript",
+        "Tailwind CSS",
+        "shadcn/ui"
+      ]
+    },
+    {
+      "layer": "Mobile",
+      "items": [
+        "Kotlin",
+        "Jetpack Compose",
+        "React Native",
+        "Android Studio"
+      ]
+    },
+    {
+      "layer": "Infra",
+      "items": [
+        "Docker",
+        "AWS",
+        "Google Cloud",
+        "DigitalOcean",
+        "GitHub Actions",
+        "Linux"
+      ]
+    },
+    {
+      "layer": "Growth",
+      "items": [
+        "Technical SEO",
+        "Search Console",
+        "Analytics",
+        "Claude Code",
+        "Codex"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "slug": "call",
+      "label": "Book a call",
+      "primary": true
+    },
+    {
+      "slug": "email",
+      "label": "Email"
+    },
+    {
+      "slug": "linkedin",
+      "label": "LinkedIn"
+    },
+    {
+      "slug": "portfolio",
+      "label": "Portfolio"
+    },
+    {
+      "slug": "resume",
+      "label": "Résumé"
     }
   ]
 }
