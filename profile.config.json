@@ -160,5 +160,51 @@
       "metric": "Notebooks",
       "url": "https://github.com/vamshisaideep9/Datascience-projects"
     }
+  ],
+  "boot": [
+    "Mounting /dev/brain",
+    "Loading rag_engine.ko",
+    "Starting llm-agents.service",
+    "Attaching android-toolchain",
+    "Linking fastapi ⇄ next.js",
+    "Indexing repositories"
+  ],
+  "neofetch": [
+    [
+      "OS",
+      "vamshi.os — AI × Full-Stack"
+    ],
+    [
+      "Host",
+      "github.com/vamshisaideep9"
+    ],
+    [
+      "Shell",
+      "zsh + Claude Code + Codex"
+    ],
+    [
+      "AI",
+      "Python · PyTorch · LangChain · OpenAI · Claude · MCP"
+    ],
+    [
+      "Backend",
+      "FastAPI · PostgreSQL · Redis · Node.js"
+    ],
+    [
+      "Frontend",
+      "Next.js · React · TypeScript · Tailwind · shadcn/ui"
+    ],
+    [
+      "Mobile",
+      "Kotlin · Jetpack Compose · React Native"
+    ],
+    [
+      "Cloud",
+      "Docker · AWS · GCP · DigitalOcean · Actions"
+    ],
+    [
+      "Growth",
+      "Technical SEO · Search Console · Analytics"
+    ]
   ]
 }

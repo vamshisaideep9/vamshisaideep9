@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Builds the animated SVG assets for the profile README from profile.config.json.
+"""Builds the animated SVG assets for the profile README from profile.config.json (+ stats.json).
 
-Style: light, minimal, professional — white surfaces, 1px zinc hairlines, deep accents, Geist type, calm motion.
-Every asset has its own solid background, so it stays readable in GitHub light AND dark mode.
+Style: hacker terminal — black CRT screens, phosphor-green and amber JetBrains Mono, scanlines, glow,
+flicker, Matrix rain, ASCII art and console output (boot log, systemctl, neofetch, stats bars).
 
-Usage:  pip install fonttools brotli && python scripts/build_assets.py
+Usage:  pip install fonttools brotli pyfiglet && python scripts/build_assets.py
 Fonts are subset per SVG and embedded as base64 woff2, so they render inside GitHub's <img> sandbox
 (GitHub strips external resources and scripts, but keeps CSS + SMIL animation).
 """
-import base64, io, json, os, re, textwrap
+import base64, io, json, os, random, textwrap
+from datetime import date, timedelta
 from xml.sax.saxutils import escape
+import pyfiglet
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
@@ -19,53 +21,60 @@ OUT = os.path.join(ROOT, "assets")
 CFG = json.load(open(os.path.join(ROOT, "profile.config.json"), encoding="utf-8"))
 _SP = os.path.join(ROOT, "stats.json")
 STATS = json.load(open(_SP, encoding="utf-8")) if os.path.exists(_SP) else None
+USER = CFG["username"]
 
 # ── design tokens ─────────────────────────────────────────────────────────
-BG, CARD, SURFACE, LINE = "#ffffff", "#ffffff", "#f8fafc", "#e4e4e7"
-TEXT, MUTED, DIM = "#18181b", "#52525b", "#a1a1aa"
-INDIGO, VIOLET, CYAN, EMERALD, AMBER = "#4f46e5", "#7c3aed", "#0891b2", "#059669", "#b45309"
-ACCENTS = [INDIGO, VIOLET, CYAN, EMERALD]
+BG, PANEL, BAR, LINE = "#030703", "#060d07", "#0b160d", "#163a20"
+GREEN, GREEN_HI, GREEN_DIM, GREEN_LO = "#39ff7a", "#b6ffc9", "#1f9e4a", "#0f3d1d"
+AMBER, CYAN, RED, MAGENTA = "#ffb347", "#4df3ff", "#ff5f56", "#ff2a6d"
+TEXT = "#c8ffd4"
+W = 1200
+FS = 14                 # body font size; JetBrains Mono advance = 0.6em
+CW = FS * 0.6           # one terminal column in px
+LH = 22                 # line height
 
-FONT_FILES = {
-    ("Geist", 400): "geist-sans-latin-400-normal.woff2",
-    ("Geist", 500): "geist-sans-latin-500-normal.woff2",
-    ("Geist", 600): "geist-sans-latin-600-normal.woff2",
-    ("Geist", 700): "geist-sans-latin-700-normal.woff2",
-    ("GeistMono", 400): "geist-mono-latin-400-normal.woff2",
-    ("GeistMono", 500): "geist-mono-latin-500-normal.woff2",
-}
-
-
-def font_face(family, weight, text):
-    opts = subset.Options(); opts.flavor = "woff2"; opts.layout_features = ["*"]
-    f = TTFont(os.path.join(FONTS, FONT_FILES[(family, weight)]))
-    s = subset.Subsetter(opts); s.populate(text=text + " 0123456789·—→●_›/|:.-#"); s.subset(f)
-    buf = io.BytesIO(); f.flavor = "woff2"; f.save(buf)
-    return (f"@font-face{{font-family:'{family}';font-weight:{weight};"
-            f"src:url(data:font/woff2;base64,{base64.b64encode(buf.getvalue()).decode()}) format('woff2');}}")
+FONT_FILES = {"JB": "JetBrainsMono-Regular.woff2", "JBB": "JetBrainsMono-Bold.woff2", "VT": "vt323-latin-400-normal.woff2"}
 
 
 def fonts_css(spec):
-    return "".join(font_face(fam, w, txt) for (fam, w), txt in spec.items())
-
-
-def tw(text, size, mono=False):
-    """Rough text width estimate for sizing pills/chips."""
-    return len(text) * size * (0.6 if mono else 0.55)
+    """spec: {"JB"|"JBB"|"VT": text_used} → @font-face rules with per-SVG subsets."""
+    css = []
+    for fam, text in spec.items():
+        opts = subset.Options(); opts.flavor = "woff2"; opts.layout_features = []
+        f = TTFont(os.path.join(FONTS, FONT_FILES[fam]))
+        s = subset.Subsetter(opts); s.populate(text=text + " 0123456789█▌_>$~/"); s.subset(f)
+        buf = io.BytesIO(); f.flavor = "woff2"; f.save(buf)
+        css.append(f"@font-face{{font-family:'{fam}';src:url(data:font/woff2;base64,{base64.b64encode(buf.getvalue()).decode()}) format('woff2');}}")
+    return "".join(css)
 
 
 DEFS = f"""
-<linearGradient id="aurora" x1="0" x2="1"><stop offset="0" stop-color="{INDIGO}"/><stop offset=".5" stop-color="{VIOLET}"/><stop offset="1" stop-color="{CYAN}"/></linearGradient>
-<linearGradient id="hair" x1="0" x2="1"><stop offset="0" stop-color="#a1a1aa" stop-opacity="0"/><stop offset=".5" stop-color="#a1a1aa" stop-opacity=".55"/><stop offset="1" stop-color="#a1a1aa" stop-opacity="0"/></linearGradient>
-<linearGradient id="glint" x1="0" x2="1"><stop offset="0" stop-color="{VIOLET}" stop-opacity="0"/><stop offset=".5" stop-color="{VIOLET}" stop-opacity=".6"/><stop offset="1" stop-color="{VIOLET}" stop-opacity="0"/></linearGradient>
-<linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#09090b"/><stop offset="1" stop-color="#3f3f46"/></linearGradient>
-<linearGradient id="shine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="260" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/><animateTransform attributeName="gradientTransform" type="translate" values="-400 0;1600 0" dur="6s" repeatCount="indefinite"/></linearGradient>
-<filter id="blur" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="48"/></filter>
-<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
-<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#18181b" opacity=".08"/></pattern>
+<filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/>
+  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/>
+  <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#000" opacity=".35"/></pattern>
+<radialGradient id="vignette" cx=".5" cy=".5" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".75"/></radialGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{GREEN}" stop-opacity="0"/><stop offset=".5" stop-color="{GREEN}" stop-opacity=".07"/><stop offset="1" stop-color="{GREEN}" stop-opacity="0"/></linearGradient>
 """
 
-BASE_CSS = "@media (prefers-reduced-motion: reduce){*{animation:none!important}}"
+BASE_CSS = f"""
+.t{{font:400 {FS}px 'JB',monospace;fill:{TEXT};white-space:pre}} .b{{font-family:'JBB','JB',monospace;font-weight:700}}
+.g{{fill:{GREEN}}} .gh{{fill:{GREEN_HI}}} .gd{{fill:{GREEN_DIM}}} .a{{fill:{AMBER}}} .c{{fill:{CYAN}}} .r{{fill:{RED}}} .m{{fill:{MAGENTA}}}
+.flicker{{animation:flicker 7s infinite steps(1)}}
+@keyframes flicker{{0%,100%{{opacity:1}}41%{{opacity:.93}}42%{{opacity:1}}77%{{opacity:.96}}78%{{opacity:1}}}}
+.blink{{animation:blink 1s steps(1) infinite}} @keyframes blink{{50%{{opacity:0}}}}
+@keyframes type{{from{{clip-path:inset(0 100% 0 0)}}to{{clip-path:inset(0 0 0 0)}}}}
+@keyframes show{{from{{opacity:0}}to{{opacity:1}}}}
+@media (prefers-reduced-motion: reduce){{*{{animation:none!important}}}}
+"""
+
+
+def write(name, content):
+    os.makedirs(OUT, exist_ok=True)
+    with open(os.path.join(OUT, name), "w", encoding="utf-8") as fh:
+        fh.write(content)
+    print(f"  ✓ assets/{name}  ({len(content)//1024} KB)")
 
 
 def svg(w, h, body, css, title):
@@ -73,393 +82,366 @@ def svg(w, h, body, css, title):
             f"<title>{escape(title)}</title><style>{css}{BASE_CSS}</style><defs>{DEFS}</defs>{body}</svg>")
 
 
-DARK = {  # light token → GitHub-dark counterpart
-    "#ffffff": "#0d1117", "#f8fafc": "#161b22", "#e4e4e7": "#30363d", "#18181b": "#e6edf3", "#52525b": "#9da7b3",
-    "#a1a1aa": "#6e7681", "#09090b": "#ffffff", "#3f3f46": "#b1bac4", "#4f46e5": "#818cf8", "#7c3aed": "#a78bfa",
-    "#0891b2": "#22d3ee", "#059669": "#34d399", "#b45309": "#fbbf24", "#f1f5f9": "#161b22", "#e0e7ff": "#1e1b4b",
-    "#a5b4fc": "#3730a3", "#4338ca": "#a5b4fc",
-}
-
-
-def write(name, content):
-    """Writes the light asset to assets/ and a dark-palette twin to assets/dark/."""
-    os.makedirs(os.path.join(OUT, "dark"), exist_ok=True)
-    dark = re.sub(r"#[0-9a-fA-F]{6}\b", lambda m: DARK.get(m.group(0).lower(), m.group(0)), content)
-    for path, data in ((os.path.join(OUT, name), content), (os.path.join(OUT, "dark", name), dark)):
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(data)
-    print(f"  ✓ assets/{name} + dark  ({len(content)//1024} KB)")
-
-
-def card(w, h, r=18, glint=True, dur=7):
-    """Base card: white fill, 1px hairline, faint top highlight and an optional travelling glint."""
-    g = (f'<rect class="glint" x="-200" y="0" width="200" height="1.5" fill="url(#glint)">'
-         f'<animate attributeName="x" values="-200;{w + 200}" dur="{dur}s" repeatCount="indefinite"/></rect>') if glint else ""
-    return (f'<rect width="{w}" height="{h}" rx="{r}" fill="{CARD}"/>'
-            f'<rect x=".5" y=".5" width="{w-1}" height="{h-1}" rx="{r}" fill="none" stroke="{LINE}"/>'
-            f'{g}')
-
-
-def tracer(w, h, r, dur=6.0, phase=0.0, width=1.5):
-    """A short aurora-coloured light that travels around a card's border."""
-    return (f'<rect x=".75" y=".75" width="{w-1.5}" height="{h-1.5}" rx="{r}" fill="none" stroke="url(#aurora)" stroke-width="{width}" '
-            f'pathLength="1000" stroke-dasharray="90 910" stroke-linecap="round">'
-            f'<animate attributeName="stroke-dashoffset" values="0;-1000" dur="{dur}s" begin="-{phase:.2f}s" repeatCount="indefinite"/></rect>')
-
-
-# ── 1. HEADER ─────────────────────────────────────────────────────────────
-def header():
-    W, H = 1200, 340
-    name, title, status, roles = CFG["name"], CFG["title"], CFG["status"], CFG["roles"]
-    n, step = len(roles), 3.4
-    cyc = n * step
-    on = 100 / n
-    role_css = "".join(f".r{i}{{opacity:0;animation:role {cyc}s ease-in-out infinite {i*step - cyc:.1f}s}}" for i in range(n))
-    role_css += (f"@keyframes role{{0%{{opacity:0;transform:translateY(6px)}}{on*.1:.2f}%{{opacity:1;transform:none}}"
-                 f"{on*.86:.2f}%{{opacity:1;transform:none}}{on:.2f}%{{opacity:0;transform:translateY(-6px)}}100%{{opacity:0}}}}")
-    roles_svg = "".join(f'<text class="role r{i}" x="80" y="246"><tspan fill="{VIOLET}">› </tspan>{escape(r)}</text>' for i, r in enumerate(roles))
-
-    css = fonts_css({("Geist", 600): name, ("Geist", 500): title + status, ("GeistMono", 400): "".join(roles) + "github.com/" + CFG["username"]}) + f"""
-    .name{{font:600 68px 'Geist',sans-serif;letter-spacing:-2.5px}}
-    .title{{font:500 26px 'Geist',sans-serif;letter-spacing:-.4px}}
-    .role{{font:400 17px 'GeistMono',monospace;fill:{MUTED}}}
-    .pill{{font:500 14px 'Geist',sans-serif;fill:{TEXT}}}
-    .url{{font:400 12px 'GeistMono',monospace;fill:{DIM};letter-spacing:.5px}}
-    .in{{animation:in .9s cubic-bezier(.2,.7,.2,1) both}} .d1{{animation-delay:.12s}} .d2{{animation-delay:.24s}} .d3{{animation-delay:.36s}}
-    @keyframes in{{from{{opacity:0;transform:translateY(10px)}}to{{opacity:1;transform:none}}}}
-    .ping{{animation:ping 2s cubic-bezier(0,0,.2,1) infinite;transform-origin:99px 76px}}
-    @keyframes ping{{75%,100%{{transform:scale(2.6);opacity:0}}}}
-    .spin1{{animation:spin 26s linear infinite;transform-origin:950px 170px}}
-    .spin2{{animation:spin 40s linear infinite reverse;transform-origin:950px 170px}}
-    .spin3{{animation:spin 16s linear infinite;transform-origin:950px 170px}}
-    @keyframes spin{{to{{transform:rotate(360deg)}}}}
-    .breathe{{animation:breathe 5s ease-in-out infinite;transform-origin:950px 170px}}
-    @keyframes breathe{{50%{{transform:scale(1.12);opacity:.65}}}}
-    {role_css} @media (prefers-reduced-motion: reduce){{.r0{{opacity:1!important}}}}"""
-
-    cx, cy = 950, 170
-    pill_w = tw(status, 14) + 54
-    rings = f"""
-      <circle class="breathe" cx="{cx}" cy="{cy}" r="70" fill="{VIOLET}" opacity=".16" filter="url(#blur)"/>
-      <circle cx="{cx}" cy="{cy}" r="58" fill="none" stroke="#18181b" stroke-opacity=".08"/>
-      <circle cx="{cx}" cy="{cy}" r="96" fill="none" stroke="#18181b" stroke-opacity=".07"/>
-      <circle cx="{cx}" cy="{cy}" r="134" fill="none" stroke="#18181b" stroke-opacity=".12" stroke-dasharray="2 6"/>
-      <g class="spin1"><circle cx="{cx}" cy="{cy}" r="96" fill="none" stroke="url(#aurora)" stroke-width="1.6" stroke-dasharray="120 484" stroke-linecap="round"/>
-        <circle cx="{cx + 96}" cy="{cy}" r="4" fill="{CYAN}"/><circle cx="{cx + 96}" cy="{cy}" r="9" fill="{CYAN}" opacity=".25" filter="url(#soft)"/></g>
-      <g class="spin2"><circle cx="{cx}" cy="{cy}" r="134" fill="none" stroke="url(#aurora)" stroke-width="1.2" stroke-dasharray="70 772" stroke-linecap="round" opacity=".8"/>
-        <circle cx="{cx}" cy="{cy - 134}" r="3.5" fill="{INDIGO}"/></g>
-      <g class="spin3"><circle cx="{cx}" cy="{cy}" r="58" fill="none" stroke="url(#aurora)" stroke-width="1.4" stroke-dasharray="40 325" stroke-linecap="round"/>
-        <circle cx="{cx - 58}" cy="{cy}" r="3" fill="{VIOLET}"/></g>
-      <circle cx="{cx}" cy="{cy}" r="22" fill="{CARD}" stroke="#18181b" stroke-opacity=".12"/>
-      <circle cx="{cx}" cy="{cy}" r="7" fill="url(#aurora)"/>"""
-    body = f"""
-    <defs><clipPath id="frame"><rect width="{W}" height="{H}" rx="20"/></clipPath>
-      <radialGradient id="fadeR" cx=".75" cy=".4" r=".7"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-      <mask id="dm"><rect width="{W}" height="{H}" fill="url(#fadeR)"/></mask></defs>
-    <g clip-path="url(#frame)">
-      <rect width="{W}" height="{H}" fill="{BG}"/>
-      <rect width="{W}" height="{H}" fill="url(#dots)" mask="url(#dm)"/>
-      <g opacity=".38">
-        <ellipse cx="820" cy="40" rx="260" ry="120" fill="{INDIGO}" opacity=".45" filter="url(#blur)">
-          <animate attributeName="cx" values="820;900;820" dur="18s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="1060" cy="120" rx="200" ry="110" fill="{VIOLET}" opacity=".35" filter="url(#blur)">
-          <animate attributeName="cy" values="120;70;120" dur="14s" repeatCount="indefinite"/></ellipse>
-        <ellipse cx="640" cy="-20" rx="220" ry="90" fill="{CYAN}" opacity=".22" filter="url(#blur)">
-          <animate attributeName="cx" values="640;560;640" dur="22s" repeatCount="indefinite"/></ellipse>
-      </g>
-      {rings}
-      <g class="in">
-        <rect x="80" y="58" width="{pill_w:.0f}" height="36" rx="18" fill="{SURFACE}" stroke="{LINE}"/>
-        <circle class="ping" cx="99" cy="76" r="4" fill="{EMERALD}"/><circle cx="99" cy="76" r="4" fill="{EMERALD}"/>
-        <text class="pill" x="114" y="81">{escape(status)}</text>
-      </g>
-      <text class="name in d1" x="76" y="168" fill="url(#silver)">{escape(name)}</text>
-      <text class="name in d1" x="76" y="168" fill="url(#shine)">{escape(name)}</text>
-      <text class="title in d2" x="80" y="208" fill="url(#aurora)">{escape(title)}</text>
-      <g class="in d3">{roles_svg}</g>
-      <text class="url" x="80" y="302">github.com/{escape(CFG['username'])}</text>
+def window(w, h, path, body, r=12, rain=False, beam=True):
+    """A CRT terminal window: title bar, phosphor content, scanlines, rolling beam and vignette."""
+    clip = "cw"
+    beam_svg = (f'<rect x="0" y="-120" width="{w}" height="120" fill="url(#beam)">'
+                f'<animate attributeName="y" values="-120;{h}" dur="7s" repeatCount="indefinite"/></rect>') if beam else ""
+    return f"""
+    <defs><clipPath id="{clip}"><rect width="{w}" height="{h}" rx="{r}"/></clipPath></defs>
+    <g clip-path="url(#{clip})">
+      <rect width="{w}" height="{h}" fill="{BG}"/>
+      {rain_svg(w, h) if rain else ''}
+      <rect width="{w}" height="34" fill="{BAR}"/><rect y="33.5" width="{w}" height="1" fill="{LINE}"/>
+      <circle cx="20" cy="17" r="5.5" fill="none" stroke="{RED}" stroke-opacity=".8"/><circle cx="38" cy="17" r="5.5" fill="none" stroke="{AMBER}" stroke-opacity=".8"/>
+      <circle cx="56" cy="17" r="5.5" fill="{GREEN}"><animate attributeName="opacity" values="1;.35;1" dur="2.4s" repeatCount="indefinite"/></circle>
+      <text class="t gd" x="{w/2}" y="21.5" text-anchor="middle" style="font-size:12px">{escape(path)}</text>
+      <text class="t gd" x="{w - 16}" y="21.5" text-anchor="end" style="font-size:12px">⏻ tty1</text>
+      <g class="flicker" filter="url(#glow)">{body}</g>
+      {beam_svg}
+      <rect width="{w}" height="{h}" fill="url(#scan)" pointer-events="none"/>
+      <rect width="{w}" height="{h}" fill="url(#vignette)" pointer-events="none"/>
     </g>
-    <rect x=".5" y=".5" width="{W-1}" height="{H-1}" rx="20" fill="none" stroke="{LINE}"/>
-    {tracer(W, H, 20, dur=12, width=1.8)}
-    """
-    write("header.svg", svg(W, H, body, css, f"{name} — {title}"))
+    <rect x=".5" y=".5" width="{w-1}" height="{h-1}" rx="{r}" fill="none" stroke="{LINE}"/>
+    <rect x="1.5" y="1.5" width="{w-3}" height="{h-3}" rx="{r-1}" fill="none" stroke="{GREEN}" stroke-opacity=".08"/>"""
 
 
-# ── 2. TERMINAL ───────────────────────────────────────────────────────────
+RAIN_CHARS = "01<>/{}[]$#*+=ABCDEF0123456789"
+
+
+def rain_svg(w, h, seed=3, step=24, size=14):
+    """Matrix-style digital rain: columns of glyphs falling at different speeds."""
+    rnd = random.Random(seed)
+    cols, n = [], int(h / (size + 4)) + 2
+    for x in range(8, w, step):
+        chars = [rnd.choice(RAIN_CHARS) for _ in range(n)]
+        tsp = "".join(f'<tspan x="{x}" dy="{size + 4}"' + (' class="gh"' if j == n - 1 else "") + f">{escape(c)}</tspan>" for j, c in enumerate(chars))
+        dur = rnd.uniform(5, 13)
+        cols.append(f'<text class="t rain" style="font-size:{size}px;animation-duration:{dur:.1f}s;animation-delay:-{rnd.uniform(0, dur):.1f}s" y="{-h}">{tsp}</text>')
+    return (f'<g opacity=".16">{"".join(cols)}</g>'
+            f'<style>.rain{{fill:{GREEN};animation:fall linear infinite}} @keyframes fall{{from{{transform:translateY(0)}}to{{transform:translateY({2*h}px)}}}}</style>')
+
+
+def line(x, y, segs, cls="", anchor=None):
+    """segs: [(text, class)] → one terminal line."""
+    inner = "".join(f'<tspan class="{c}">{escape(t)}</tspan>' if c else escape(t) for t, c in segs)
+    a = f' text-anchor="{anchor}"' if anchor else ""
+    return f'<text class="t {cls}" x="{x:.1f}" y="{y}"{a}>{inner}</text>'
+
+
+def seg_text(segs):
+    return "".join(t for t, _ in segs)
+
+
+def typed(x, y, segs, delay, cps=40, cls=""):
+    """A line that types itself out after `delay` seconds."""
+    n = max(len(seg_text(segs)), 1)
+    return (f'<g style="animation:type {n/cps:.2f}s steps({n}) {delay:.2f}s both">{line(x, y, segs, cls)}</g>', delay + n / cps)
+
+
+def appear(x, y, segs, delay, cls=""):
+    return f'<g style="animation:show .15s {delay:.2f}s both">{line(x, y, segs, cls)}</g>'
+
+
+# ── 1. HEADER: boot log → glitching ASCII name → rotating roles ────────────
+def header():
+    H = 560
+    first, last = CFG["name"].split(" ", 1)
+    art1 = pyfiglet.figlet_format(first.upper(), font="ansi_shadow").rstrip("\n").split("\n")
+    art2 = pyfiglet.figlet_format(last.upper(), font="ansi_shadow").rstrip("\n").split("\n")
+    boot = list(CFG["boot"])
+    if STATS:
+        boot[-1] = f"{boot[-1]}: {STATS['repos']} repos ({STATS['private_repos']} private)"
+    parts, t = [], .3
+    x0, y = 32, 66
+    for b in boot:
+        dots = "." * max(3, 50 - len(b))
+        parts.append(appear(x0, y, [("[  ", "gd"), ("OK", "g b"), ("  ] ", "gd"), (b + " ", ""), (dots, "gd")], t))
+        t += .28; y += LH - 2
+    art_size = 13; art_lh = art_size * 1.32   # JetBrains Mono cell height, so box glyphs join
+    ay = y + 26
+
+    def art_block(lines, y0, cls):
+        return "".join(f'<text class="t {cls}" x="{x0}" y="{y0 + i*art_lh:.1f}" style="font-size:{art_size}px">{escape(l)}</text>' for i, l in enumerate(lines))
+    y2 = ay + len(art1) * art_lh + 4
+    a = art_block(art1, ay, "g") + art_block(art2, y2, "g")
+    glitch = (f'<g class="gl1">{art_block(art1, ay, "m")}{art_block(art2, y2, "m")}</g>'
+              f'<g class="gl2">{art_block(art1, ay, "c")}{art_block(art2, y2, "c")}</g>')
+    art_end = y2 + len(art2) * art_lh
+    name_svg = f'<g style="animation:show .6s {t + .2:.2f}s both">{glitch}{a}</g>'
+
+    # Rotating roles: typed in, held, erased.
+    roles = CFG["roles"]; n = len(roles); step = 4.2; cyc = n * step; on = 100 / n
+    ry = art_end + 36
+    role_css = "".join(f".ro{i}{{clip-path:inset(0 100% 0 0);animation:ro {cyc:.1f}s steps(30) infinite {t + 1.2 + i*step - cyc:.1f}s}}" for i in range(n))
+    role_css += (f"@keyframes ro{{0%{{clip-path:inset(0 100% 0 0)}}{on*.32:.2f}%{{clip-path:inset(0 0 0 0)}}{on*.8:.2f}%{{clip-path:inset(0 0 0 0)}}"
+                 f"{on*.97:.2f}%{{clip-path:inset(0 100% 0 0)}}100%{{clip-path:inset(0 100% 0 0)}}}}")
+    prompt = [(f"{USER}@ai", "g b"), (":", "gd"), ("~", "c"), ("$ ", "gd"), ("echo $ROLE", "")]
+    roles_svg = (line(x0, ry, prompt) +
+                 "".join(f'<g class="ro{i}">{line(x0, ry + LH, [("> ", "a"), (r, "gh")])}</g>' for i, r in enumerate(roles)))
+
+    # System panel (right): box-drawn with live numbers.
+    px, pw = 744, 424
+    cols = int(pw / CW)
+    rows = [("user", CFG["name"]), ("role", CFG["title"]), ("status", "● ONLINE · open to work"), ("mode", "full-time · freelance")]
+    if STATS:
+        rows += [("contrib", f"{STATS['year_contributions']:,} / 12 months"), ("commits", f"{STATS['commits']:,}"),
+                 ("prs", f"{STATS['prs_merged']:,} merged"), ("streak", f"{STATS['streak_longest']} days max")]
+    head = "[ SYSTEM ]"
+    bh = (len(rows) + 1) * LH + 6
+    box = [f'<rect x="{px}" y="64" width="{pw}" height="{bh}" rx="6" fill="{GREEN}" fill-opacity=".03" stroke="{GREEN_DIM}"/>'
+           f'<rect x="{px + 14}" y="56" width="{(len(head) + 2) * CW:.0f}" height="16" fill="{BG}"/>{line(px + 14 + CW, 69, [(head, "g b")])}']
+    for i, (k, v) in enumerate(rows):
+        vcls = "g b" if k == "status" else "a" if k in ("contrib", "commits", "prs", "streak") else "gh"
+        box.append(appear(px + 16, 70 + (i + 1) * LH, [(f"{k:<9}", "gd"), (v, vcls)], .4 + i * .12))
+    my = 70 + (len(rows) + 2) * LH + 16
+    meters = []
+    bw = pw - 120
+    for i, (k, pct) in enumerate([("AI", 92), ("WEB", 86), ("MOBILE", 74), ("SEO", 80)]):
+        yy = my + i * (LH - 2)
+        full = (bw - 4) * pct / 100
+        meters.append(f'{line(px, yy, [(f"{k:<7}", "gd")])}'
+                      f'<rect x="{px + 70}" y="{yy - 11}" width="{bw}" height="12" fill="none" stroke="{GREEN_LO}"/>'
+                      f'<rect x="{px + 72}" y="{yy - 9}" width="{full:.0f}" height="8" fill="{GREEN}" opacity=".85">'
+                      f'<animate attributeName="width" values="0;{full:.0f};{full*.88:.0f};{full:.0f}" keyTimes="0;.25;.6;1" dur="{4 + i*.7:.1f}s" repeatCount="indefinite"/></rect>'
+                      f'{line(px + 80 + bw, yy, [(f"{pct}%", "a")])}')
+    panel = f'<g style="animation:show .5s .3s both">{"".join(box)}{"".join(meters)}</g>'
+
+    alltxt = "".join(art1 + art2) + "".join(boot) + "[] .:" + "".join(roles) + seg_text(prompt) + head + "".join(k + v for k, v in rows) + "AIWEBMOBILESEO%"
+    css = fonts_css({"JB": alltxt + RAIN_CHARS, "JBB": "OK" + USER + "@ai● ONLINE · open to work[ SYSTEM ]"}) + f"""
+    .gl1,.gl2{{opacity:0}} .gl1{{animation:g1 5s infinite steps(1)}} .gl2{{animation:g2 5s infinite steps(1)}}
+    @keyframes g1{{0%,88%,100%{{opacity:0;transform:none}}89%{{opacity:.75;transform:translate(-4px,1px)}}91%{{opacity:.75;transform:translate(3px,-1px)}}93%{{opacity:0}}96%{{opacity:.6;transform:translate(-2px,0)}}97%{{opacity:0}}}}
+    @keyframes g2{{0%,88%,100%{{opacity:0;transform:none}}89%{{opacity:.75;transform:translate(4px,-1px)}}91%{{opacity:.75;transform:translate(-3px,1px)}}93%{{opacity:0}}96%{{opacity:.6;transform:translate(2px,0)}}97%{{opacity:0}}}}
+    {role_css}
+    @media (prefers-reduced-motion: reduce){{.ro0{{clip-path:none!important}}}}"""
+    body = "".join(parts) + name_svg + f'<g style="animation:show .3s {t + 1:.2f}s both">{roles_svg}</g>' + panel
+    write("header.svg", svg(W, H, window(W, H, f"{USER}@ai: ~ — boot", body, rain=True), css, f"{CFG['name']} — {CFG['title']}"))
+
+
+# ── 2. SECTION PROMPTS (Kali-style two-line prompt, command types itself) ──
+SECTIONS = [("about", "about", "cat about.md"), ("services", "services", "systemctl list-units --type=service --state=running"),
+            ("projects", "projects", "ls -la ~/projects --featured"), ("stack", "stack", "neofetch"),
+            ("stats", "stats", "./stats --include-private --since 2024"), ("feed", "feed", "tail -f ~/feed.log"),
+            ("guestbook", "guestbook", "cat /var/log/visitors.log"), ("contact", "contact", "./contact.sh --secure")]
+
+
+def section(slug, path, cmd):
+    H = 74
+    l1 = [("┌──(", "gd"), (f"{USER}㉿ai", "g b"), (")-[", "gd"), (f"~/{path}", "c b"), ("]", "gd")]
+    l2p = [("└─", "gd"), ("$ ", "a b")]
+    n = len(cmd)
+    css = fonts_css({"JB": seg_text(l1) + seg_text(l2p) + cmd, "JBB": f"{USER}㉿ai~/{path}$ "})
+    cx = 24 + len(seg_text(l2p)) * CW
+    body = f"""<rect width="{W}" height="{H}" rx="10" fill="{BG}"/><rect width="{W}" height="{H}" rx="10" fill="url(#scan)"/>
+    <rect x=".5" y=".5" width="{W-1}" height="{H-1}" rx="10" fill="none" stroke="{LINE}"/>
+    <g filter="url(#glow)">{line(24, 30, l1)}{line(24, 54, l2p)}
+      <g style="animation:type {n*.045:.2f}s steps({n}) .3s both">{line(cx, 54, [(cmd, "gh")])}</g>
+      <rect class="blink" x="{cx + n*CW + 3:.1f}" y="41" width="{CW:.1f}" height="17" fill="{GREEN}"/></g>"""
+    write(f"section-{slug}.svg", svg(W, H, body, css, f"$ {cmd}"))
+
+
+# ── 3. ABOUT TERMINAL ─────────────────────────────────────────────────────
 def terminal():
-    W = 1200
-    rows = []
-    blocks = list(CFG["terminal"])
+    blocks = [b for b in CFG["terminal"] if b["cmd"] != "status"]
+    status = next((b for b in CFG["terminal"] if b["cmd"] == "status"), None)
     if STATS:
         langs = " · ".join(f"{l['name']} {round(l['pct'])}%" for l in STATS["languages"][:3])
-        blocks.insert(len(blocks) - 1, {"cmd": "gh stats --include-private", "out": [
+        blocks.append({"cmd": "gh stats --include-private", "out": [
             f"activity:  {STATS['year_contributions']:,} contributions in the last 12 months",
             f"repos:     {STATS['repos']} ({STATS['private_repos']} private) · {STATS['prs_merged']:,} PRs merged",
             f"langs:     {langs}"]})
-    for blk in blocks:
-        rows.append(("cmd", blk["cmd"])); rows += [("out", o) for o in blk["out"]]
-    LH, TOP = 30, 92
-    H = TOP + LH * len(rows) + 40
-    alltxt = "".join(r[1] for r in rows) + "vamshi@ai ~ % zsh terminal"
-    t, items, rules = 0.4, [], []
+    if status:
+        blocks.append(status)
+    rows = []
+    for b in blocks:
+        rows.append(("cmd", b["cmd"])); rows += [("out", o) for o in b["out"]]
+    top = 64
+    H = top + LH * (len(rows) + 1) + 26
+    t, items, x = .3, [], 28
+    prompt = [(f"{USER}@ai", "g b"), (":", "gd"), ("~", "c"), ("$ ", "gd")]
+    px = x + len(seg_text(prompt)) * CW
     for i, (kind, txt) in enumerate(rows):
-        y = TOP + i * LH
+        y = top + i * LH
         if kind == "cmd":
-            d = max(.45, len(txt) * .05)
-            rules.append(f".t{i}{{animation:type {d:.2f}s steps({max(len(txt),1)}) {t:.2f}s both}}")
-            items.append(f'<g class="t{i}"><text x="40" y="{y}" class="m"><tspan fill="{VIOLET}">vamshi@ai</tspan><tspan fill="{DIM}"> ~ % </tspan><tspan fill="{TEXT}" font-weight="500">{escape(txt)}</tspan></text></g>')
-            t += d + .25
+            items.append(appear(x, y, prompt, t))
+            g, t = typed(px, y, [(txt, "gh")], t + .1, cps=34)
+            items.append(g); t += .2
         else:
-            col = EMERALD if txt.startswith("●") else (AMBER if txt.startswith("⎇") else MUTED)
-            if ":" in txt and not txt.startswith(("●", "⎇", "Vamshi")):
-                k, v = txt.split(":", 1); inner = f'<tspan fill="{CYAN}">{escape(k)}:</tspan><tspan fill="{TEXT}">{escape(v)}</tspan>'
-            elif txt.startswith("Vamshi"):
-                inner = f'<tspan fill="{TEXT}">{escape(txt)}</tspan>'
+            if txt.startswith("●"):
+                segs = [(txt, "g b")]
+            elif txt.startswith("⎇"):
+                segs = [(txt, "a")]
+            elif ":" in txt and not txt.startswith(CFG["name"].split()[0]):
+                k, v = txt.split(":", 1); segs = [(k + ":", "c"), (v, "")]
             else:
-                inner = escape(txt)
-            rules.append(f".t{i}{{animation:show .4s ease-out {t:.2f}s both}}")
-            items.append(f'<text x="40" y="{y}" class="m t{i}" fill="{col}">{inner}</text>')
-            t += .2
-    ye = TOP + len(rows) * LH
-    rules.append(f".end{{animation:show .2s {t:.2f}s both}}")
-    css = fonts_css({("GeistMono", 400): alltxt, ("GeistMono", 500): "terminal — zsh"}) + f"""
-    .m{{font:400 16.5px 'GeistMono',monospace;white-space:pre}} .bar{{font:500 12.5px 'GeistMono',monospace;fill:{MUTED}}}
-    .cur{{animation:blink 1.1s steps(1) infinite}} @keyframes blink{{50%{{opacity:0}}}}
-    @keyframes type{{from{{clip-path:inset(0 100% 0 0)}}to{{clip-path:inset(0 0 0 0)}}}}
-    @keyframes show{{from{{opacity:0;transform:translateY(4px)}}to{{opacity:1;transform:none}}}}
-    {''.join(rules)}"""
-    body = f"""
-    {card(W, H, 16)}
-    <rect x="1" y="1" width="{W-2}" height="46" rx="15" fill="{SURFACE}"/><rect x="1" y="30" width="{W-2}" height="17" fill="{SURFACE}"/>
-    <line x1="1" y1="47.5" x2="{W-1}" y2="47.5" stroke="{LINE}"/>
-    <circle cx="28" cy="24" r="6" fill="#ff5f57"/><circle cx="48" cy="24" r="6" fill="#febc2e"/><circle cx="68" cy="24" r="6" fill="#28c840"/>
-    <text class="bar" x="{W/2}" y="28" text-anchor="middle">terminal — zsh</text>
-    {''.join(items)}
-    <g class="end"><text x="40" y="{ye}" class="m"><tspan fill="{VIOLET}">vamshi@ai</tspan><tspan fill="{DIM}"> ~ % </tspan></text>
-      <rect class="cur" x="184" y="{ye - 15}" width="9" height="19" rx="1" fill="{TEXT}"/></g>"""
-    write("terminal.svg", svg(W, H, body, css, "whoami — terminal intro"))
+                segs = [(txt, "gh")]
+            items.append(appear(x, y, segs, t)); t += .12
+    ye = top + len(rows) * LH
+    items.append(f'<g style="animation:show .1s {t:.2f}s both">{line(x, ye, prompt)}<rect class="blink" x="{px + 2:.1f}" y="{ye - 14}" width="{CW:.1f}" height="18" fill="{GREEN}"/></g>')
+    alltxt = "".join(r[1] for r in rows) + seg_text(prompt)
+    css = fonts_css({"JB": alltxt, "JBB": alltxt})
+    write("terminal.svg", svg(W, H, window(W, H, f"{USER}@ai: ~ — zsh", "".join(items)), css, "whoami — terminal intro"))
 
 
-# ── 3. SECTION HEADINGS ───────────────────────────────────────────────────
-SECTIONS = [("about", "01", "About"), ("services", "02", "What I build"), ("projects", "03", "Featured work"),
-            ("stack", "04", "Tech stack"), ("stats", "05", "GitHub activity"), ("feed", "06", "Latest writing & activity"),
-            ("guestbook", "07", "Guestbook"), ("contact", "08", "Let's talk")]
-
-
-def section(slug, num, label):
-    W, H = 1200, 64
-    css = fonts_css({("Geist", 600): label, ("GeistMono", 400): num}) + f"""
-    .n{{font:400 13px 'GeistMono',monospace;fill:{MUTED};letter-spacing:1px}} .h{{font:600 30px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-.8px}}"""
-    lw = tw(label, 30) + 92
-    body = f"""
-    <defs><linearGradient id="fadeline" x1="0" x2="1"><stop offset="0" stop-color="#18181b" stop-opacity=".14"/><stop offset="1" stop-color="#18181b" stop-opacity="0"/></linearGradient></defs>
-    {card(W, H, 14, glint=False)}
-    <rect x="20" y="21" width="34" height="22" rx="11" fill="{SURFACE}" stroke="{LINE}"/>
-    <text class="n" x="37" y="36.5" text-anchor="middle">{num}</text>
-    <text class="h" x="68" y="43">{escape(label)}</text>
-    <rect x="{lw:.0f}" y="32" width="{W - lw - 24:.0f}" height="1" fill="url(#fadeline)"/>
-    <rect x="{lw:.0f}" y="31.5" width="90" height="2" rx="1" fill="url(#aurora)" opacity=".9">
-      <animate attributeName="x" values="{lw:.0f};{W-114};{lw:.0f}" dur="9s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0;.9;0" dur="4.5s" repeatCount="indefinite"/></rect>"""
-    write(f"section-{slug}.svg", svg(W, H, body, css, label))
-
-
-# ── 4. SERVICES ───────────────────────────────────────────────────────────
-ICON = {
-    "agent": '<rect x="-11" y="-8" width="22" height="17" rx="5" fill="none" stroke="{c}" stroke-width="1.8"/><circle cx="-4.5" cy="0" r="1.8" fill="{c}"/><circle cx="4.5" cy="0" r="1.8" fill="{c}"/><line x1="0" y1="-8" x2="0" y2="-13" stroke="{c}" stroke-width="1.8"/><circle cx="0" cy="-14.5" r="2" fill="{c}"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></circle>',
-    "rag": '<ellipse cx="0" cy="-8" rx="10" ry="3.6" fill="none" stroke="{c}" stroke-width="1.8"/><path d="M-10 -8 V8 A10 3.6 0 0 0 10 8 V-8" fill="none" stroke="{c}" stroke-width="1.8"/><path d="M-10 0 A10 3.6 0 0 0 10 0" fill="none" stroke="{c}" stroke-width="1.8"/>',
-    "mobile": '<rect x="-8" y="-13" width="16" height="26" rx="3.5" fill="none" stroke="{c}" stroke-width="1.8"/><line x1="-2.5" y1="9" x2="2.5" y2="9" stroke="{c}" stroke-width="1.8" stroke-linecap="round"><animate attributeName="opacity" values="1;.3;1" dur="2s" repeatCount="indefinite"/></line>',
-    "web": '<rect x="-13" y="-10" width="26" height="20" rx="3" fill="none" stroke="{c}" stroke-width="1.8"/><line x1="-13" y1="-4" x2="13" y2="-4" stroke="{c}" stroke-width="1.8"/><polyline points="-7,6 -2,1 2,4 8,-1" fill="none" stroke="{c}" stroke-width="1.8" stroke-linejoin="round"><animate attributeName="opacity" values="1;.3;1" dur="2.2s" repeatCount="indefinite"/></polyline>',
-    "spark": '<path d="M0 -13 L3 -3 L13 0 L3 3 L0 13 L-3 3 L-13 0 L-3 -3 Z" fill="none" stroke="{c}" stroke-width="1.8" stroke-linejoin="round"><animateTransform attributeName="transform" type="scale" values="1;.82;1" dur="2.4s" repeatCount="indefinite"/></path>',
-    "stack": '<path d="M0 -12 L12 -6 L0 0 L-12 -6 Z" fill="none" stroke="{c}" stroke-width="1.8" stroke-linejoin="round"/><path d="M-12 0 L0 6 L12 0" fill="none" stroke="{c}" stroke-width="1.8" stroke-linejoin="round"><animate attributeName="opacity" values="1;.3;1" dur="2.4s" repeatCount="indefinite"/></path><path d="M-12 6 L0 12 L12 6" fill="none" stroke="{c}" stroke-width="1.8" stroke-linejoin="round"/>',
-}
-
-
+# ── 4. SERVICES as systemd units ──────────────────────────────────────────
 def services():
     svc = CFG["services"]
-    cols = 3 if len(svc) % 3 == 0 else 2
-    W, gap, ch = 1200, 24, 236
-    rows = -(-len(svc) // cols)
-    H = rows * ch + (rows - 1) * gap
-    cw = (W - gap * (cols - 1)) / cols
-    css = fonts_css({("Geist", 600): "".join(s["title"] for s in svc), ("Geist", 400): "".join("".join(s["points"]) for s in svc)}) + f"""
-    .h{{font:600 20px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-.3px}} .p{{font:400 15.5px 'Geist',sans-serif;fill:{MUTED}}}"""
-    out = []
+    cols, top, bh = 2, 66, 138
+    rows_n = -(-len(svc) // cols)
+    H = top + rows_n * bh + 4
+    colw = (W - 56) / cols
+    out, alltxt = [], ""
     for i, s in enumerate(svc):
-        x, y, c = (i % cols) * (cw + gap), (i // cols) * (ch + gap), ACCENTS[i % 4]
-        pts = "".join(f'<circle cx="34" cy="{158 + j*28 - 5}" r="2.5" fill="{c}"/><text class="p" x="48" y="{158 + j*28}">{escape(p)}</text>' for j, p in enumerate(s["points"]))
-        out.append(f"""
-        <g transform="translate({x:.0f},{y})"><defs><clipPath id="sc{i}"><rect width="{cw:.0f}" height="{ch}" rx="16"/></clipPath></defs>
-          <g clip-path="url(#sc{i})">{card(round(cw), ch, 16, dur=8 + i*1.5)}{tracer(round(cw), ch, 16, dur=9, phase=i*1.5)}
-          <circle cx="{cw - 40:.0f}" cy="30" r="80" fill="{c}" opacity=".07" filter="url(#blur)"/></g>
-          <rect x="28" y="28" width="44" height="44" rx="12" fill="{c}" fill-opacity=".08" stroke="{c}" stroke-opacity=".35"><animate attributeName="fill-opacity" values=".06;.2;.06" dur="3.2s" begin="-{i*.53:.2f}s" repeatCount="indefinite"/></rect>
-          <g transform="translate(50,50)">{ICON[s['icon']].format(c=c)}</g>
-          <text class="h" x="28" y="108">{escape(s['title'])}</text>
-          <line x1="28" y1="126.5" x2="{cw-28:.0f}" y2="126.5" stroke="{LINE}"/>
-          {pts}</g>""")
-    write("services.svg", svg(W, H, "".join(out), css, "What I build"))
+        x = 28 + (i % cols) * colw
+        y = top + (i // cols) * bh
+        words = [w for w in s["title"].lower().replace("&", "").replace("-", " ").split() if w not in ("apps", "and")]
+        unit = "-".join(words[:2]) + ".service"
+        lines = [
+            [("● ", "g b dot"), (unit, "gh b"), (" — ", "gd"), (s["title"], "a")],
+            [("   Loaded: ", "gd"), (f"loaded (/etc/systemd/{unit}; ", ""), ("enabled", "g"), (")", "")],
+            [("   Active: ", "gd"), ("active (running)", "g b"), (" since 2024", "gd")],
+        ] + [[("   ├─ " if j < len(s["points"]) - 1 else "   └─ ", "gd"), (p, "")] for j, p in enumerate(s["points"])]
+        for j, l in enumerate(lines):
+            alltxt += seg_text(l)
+            out.append(appear(x, y + j * (LH - 2), l, .2 + i * .25 + j * .06))
+    css = fonts_css({"JB": alltxt, "JBB": alltxt}) + ".dot{animation:blink 1.6s steps(1) infinite}"
+    write("services.svg", svg(W, H, window(W, H, "systemctl — services", "".join(out)), css, "Services: " + ", ".join(s["title"] for s in svc)))
 
 
-# ── 5. PROJECT CARDS ──────────────────────────────────────────────────────
+# ── 5. PROJECT WINDOWS ────────────────────────────────────────────────────
 def project(p, idx):
-    W, H = 590, 300
-    c = ACCENTS[idx % 4]
-    desc = textwrap.wrap(p["desc"], 62)[:3]
-    tags = p["tags"][:4]
-    css = fonts_css({("Geist", 600): p["title"], ("Geist", 400): "".join(desc), ("Geist", 500): p["label"] + "".join(tags) + "View project →",
-                     ("GeistMono", 400): p["role"] + p["metric"]}) + f"""
-    .t{{font:600 25px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-.6px}} .r{{font:400 13.5px 'GeistMono',monospace;fill:{c}}}
-    .d{{font:400 15.5px 'Geist',sans-serif;fill:{MUTED}}} .tag{{font:500 12.5px 'Geist',sans-serif;fill:#3f3f46}}
-    .lbl{{font:500 12.5px 'Geist',sans-serif;fill:{TEXT}}} .m{{font:400 12.5px 'GeistMono',monospace;fill:{MUTED}}}
-    .v{{font:500 14px 'Geist',sans-serif;fill:{TEXT}}}
-    .arrow{{animation:nudge 1.8s ease-in-out infinite}} @keyframes nudge{{50%{{transform:translateX(4px)}}}}"""
-    lw, mw = tw(p["label"], 12.5) + 40, tw(p["metric"], 12.5, True) + 26
-    tx, chips = 32, []
-    for tg in tags:
-        w = tw(tg, 12.5) + 24
-        chips.append(f'<rect x="{tx:.0f}" y="236" width="{w:.0f}" height="28" rx="8" fill="{SURFACE}" stroke="{LINE}"/>'
-                     f'<text class="tag" x="{tx + w/2:.0f}" y="254.5" text-anchor="middle">{escape(tg)}</text>')
-        tx += w + 8
-    body = f"""
-    <defs><clipPath id="cc"><rect width="{W}" height="{H}" rx="18"/></clipPath></defs>
-    <g clip-path="url(#cc)">{card(W, H, 18, dur=6 + idx)}{tracer(W, H, 18, dur=7, phase=idx*1.7)}
-      <ellipse cx="{W-30}" cy="10" rx="160" ry="90" fill="{c}" opacity=".08" filter="url(#blur)"/>
-      <rect width="{W}" height="{H}" fill="url(#dots)" opacity=".6"/></g>
-    <rect x="32" y="30" width="{lw:.0f}" height="28" rx="14" fill="{SURFACE}" stroke="{LINE}"/>
-    <circle cx="47" cy="44" r="3.5" fill="{c}"/>
-    <text class="lbl" x="58" y="48.5">{escape(p['label'])}</text>
-    <text class="m" x="{W-32}" y="48.5" text-anchor="end">{escape(p['metric'])}</text>
-    <text class="t" x="32" y="104">{escape(p['title'])}</text>
-    <text class="r" x="32" y="130">{escape(p['role'])}</text>
-    {''.join(f'<text class="d" x="32" y="{166 + i*22}">{escape(l)}</text>' for i, l in enumerate(desc))}
-    {''.join(chips)}
-    <g class="arrow"><text class="v" x="{W-32}" y="255" text-anchor="end">View project →</text></g>"""
-    write(f"project-{p['slug']}.svg", svg(W, H, body, css, p["title"]))
+    PW, PH = 590, 320
+    x = 22
+    cols = int((PW - 2 * x) / CW)
+    desc = textwrap.wrap(p["desc"], cols - 1)[:4]
+    tags = " ".join(f"[{t}]" for t in p["tags"][:4])
+    perms = "drwxr-xr-x" if idx % 2 == 0 else "drwxr-x---"
+    hdr = [
+        [(perms, "gd"), ("  ", ""), (p["metric"], "a"), ("  ", ""), (p["slug"] + "/", "g b")],
+        [("$ ", "a b"), ("cat README.md", "gh")],
+        [("# ", "gd"), (p["title"], "g b")],
+        [("> ", "gd"), (p["role"], "c")],
+    ]
+    items, y = [], 64
+    for j, segs in enumerate(hdr):
+        items.append(appear(x, y, segs, .2 + j * .15)); y += LH + (6 if j == 1 else 0)
+    y += 6
+    for j, d in enumerate(desc):
+        items.append(appear(x, y, [(d, "")], .9 + j * .08)); y += LH - 2
+    alltxt = "".join(seg_text(s) for s in hdr) + "".join(desc) + tags + p["label"].upper() + "[ OPEN ↗ ]"
+    items.append(appear(x, PH - 34, [(tags, "gd")], 1.4))
+    bx = PW - 22 - 10 * CW
+    items.append(f'<g style="animation:show .2s 1.6s both"><rect x="{bx - 8:.0f}" y="{PH - 53}" width="{10*CW + 16:.0f}" height="28" fill="{GREEN}" opacity=".12" stroke="{GREEN}">'
+                 f'<animate attributeName="opacity" values=".1;.35;.1" dur="2s" repeatCount="indefinite"/></rect>{line(bx, PH - 34, [("[ OPEN ↗ ]", "g b")])}</g>')
+    items.append(line(PW - 22, 64, [(p["label"].upper(), "a")], anchor="end"))
+    css = fonts_css({"JB": alltxt, "JBB": alltxt})
+    write(f"project-{p['slug']}.svg", svg(PW, PH, window(PW, PH, f"~/projects/{p['slug']}", "".join(items), beam=False), css, f"{p['title']} — {p['desc']}"))
 
 
-# ── 6. DIVIDER + FOOTER ───────────────────────────────────────────────────
-def divider():
-    W, H = 1200, 24
-    body = f"""<rect x="0" y="11.5" width="{W}" height="1" fill="url(#hair)"/>
-    <rect x="-160" y="11" width="160" height="2" rx="1" fill="url(#aurora)"><animate attributeName="x" values="-160;{W}" dur="6s" repeatCount="indefinite"/></rect>"""
-    write("divider.svg", svg(W, H, body, "", "divider"))
+# ── 6. NEOFETCH STACK ─────────────────────────────────────────────────────
+def stack():
+    logo = pyfiglet.figlet_format("VSD", font="ansi_shadow").rstrip("\n").split("\n")
+    info = [[(f"{USER}", "g b"), ("@", "gd"), ("ai", "g b")], [("─" * (len(USER) + 3), "gd")]]
+    rows = list(CFG["neofetch"])
+    if STATS:
+        rows.insert(3, ["Uptime", f"since {STATS['since']} · {STATS['streak_longest']}-day best streak"])
+        rows.append(["Languages", " · ".join(f"{l['name']} {round(l['pct'])}%" for l in STATS["languages"][:4])])
+    for k, v in rows:
+        info.append([(f"{k}", "a b"), (": ", "gd"), (v, "")])
+    lx, ix, top = 40, 40 + 34 * CW, 70
+    H = top + max(len(logo) * 21 + 40, len(info) * LH + 40) + 30
+    grad = [GREEN_HI, GREEN, GREEN, GREEN_DIM, GREEN_DIM, GREEN_LO]
+    logo_svg = "".join(f'<text class="t b" x="{lx}" y="{top + 40 + i*21.1:.1f}" style="font-size:16px;fill:{grad[i % len(grad)]}">{escape(r)}</text>' for i, r in enumerate(logo))
+    lines = [appear(ix, top + i * LH, s, .2 + i * .09) for i, s in enumerate(info)]
+    by = top + len(info) * LH + 2
+    palette = [BG, RED, GREEN, AMBER, "#3b82f6", MAGENTA, CYAN, TEXT]
+    blocks = "".join(f'<rect x="{ix + i*30:.0f}" y="{by}" width="30" height="14" fill="{c}"/>' for i, c in enumerate(palette))
+    blocks += "".join(f'<rect x="{ix + i*30:.0f}" y="{by + 14}" width="30" height="14" fill="{c}" opacity=".55"/>' for i, c in enumerate(palette))
+    alltxt = "".join(logo) + "".join(seg_text(s) for s in info)
+    css = fonts_css({"JB": alltxt, "JBB": alltxt})
+    body = f'<g style="animation:show .6s both">{logo_svg}</g>{"".join(lines)}<g style="animation:show .3s {.3 + len(info)*.09:.2f}s both">{blocks}</g>'
+    write("stack.svg", svg(W, H, window(W, H, "neofetch", body), css, "Tech stack: " + "; ".join(f"{k}: {v}" for k, v in rows)))
 
 
-def footer():
-    W, H = 1200, 250
-    ticker = "   ·   ".join(s["title"] for s in CFG["services"]) + "   ·   "
-    tkw = len(ticker) * 13 * 0.6 + len(ticker) * 1.5
-    l1, l2 = "Let's build something intelligent.", "Hiring an engineer, or need an AI product, app or site built and ranked? I reply within a day."
-    css = fonts_css({("Geist", 600): l1, ("Geist", 400): l2, ("GeistMono", 400): ticker.upper()}) + f"""
-    .tk{{font:400 13px 'GeistMono',monospace;fill:{DIM};letter-spacing:1.5px}}
-    .mq{{animation:mq {tkw/45:.1f}s linear infinite}} @keyframes mq{{to{{transform:translateX(-{tkw:.1f}px)}}}}
-    .a{{font:600 40px 'Geist',sans-serif;letter-spacing:-1.4px}} .b{{font:400 17px 'Geist',sans-serif;fill:{MUTED}}}"""
-    body = f"""
-    <defs><clipPath id="fc"><rect width="{W}" height="{H}" rx="20"/></clipPath></defs>
-    <g clip-path="url(#fc)">{card(W, H, 20)}{tracer(W, H, 20, dur=10)}
-      <rect width="{W}" height="{H}" fill="url(#dots)"/>
-      <ellipse cx="600" cy="230" rx="380" ry="90" fill="url(#aurora)" opacity=".18" filter="url(#blur)">
-        <animate attributeName="rx" values="380;460;380" dur="10s" repeatCount="indefinite"/></ellipse></g>
-    <text class="a" x="{W/2}" y="96" text-anchor="middle" fill="url(#silver)">{escape(l1)}</text>
-    <text class="b" x="{W/2}" y="134" text-anchor="middle">{escape(l2)}</text>
-    <line x1="40" y1="186.5" x2="{W-40}" y2="186.5" stroke="{LINE}"/>
-    <g clip-path="url(#fc)"><g class="mq"><text class="tk" x="0" y="222">{escape((ticker * (int(W / tkw) + 2)).upper())}</text></g></g>"""
-    write("footer.svg", svg(W, H, body, css, l1))
-
-
-# ── 7. STATS (incl. private & org repos, from stats.json) ─────────────────
+# ── 7. STATS: XP bars, ASCII heatmap, language bars, sparkline ────────────
 def stats():
-    path = os.path.join(ROOT, "stats.json")
-    if not os.path.exists(path):
+    if not STATS:
         return
-    st = json.load(open(path, encoding="utf-8"))
-    W, H = 1200, 490
-    from datetime import date, timedelta
-    cal, start = st["calendar"], date.fromisoformat(st["calendar_start"])
-    weeks = -(-len(cal) // 7)
-    gap = 3; step = int((W - 64 + gap) // weeks); cell = step - gap
-    gx, gy = 32 + (W - 64 - (weeks * step - gap)) / 2, 232
+    st = STATS
+    x, top = 28, 66
+    bars = [("contributions", st["year_contributions"], 2000, "last 12 months"), ("commits", st["commits"], 2000, f"since {st['since']}"),
+            ("prs merged", st["prs_merged"], 500, "all repositories"), ("repositories", st["repos"], 150, f"{st['private_repos']} private"),
+            ("longest streak", st["streak_longest"], 60, f"current {st['streak_current']}d")]
+    nb, inner = 40, 132
+    items, alltxt = [], ""
+    hdr_l = f"╭─[ ACTIVITY ]─ public + private + org ─ updated {st['updated']} "
+    hdr = [("╭─[ ", "gd"), ("ACTIVITY", "g b"), (" ]─ ", "gd"), ("public + private + org", "a"), (f" ─ updated {st['updated']} ", "gd"), ("─" * (inner - len(hdr_l) + 1) + "╮", "gd")]
+    items.append(line(x, top, hdr)); alltxt += seg_text(hdr)
+    for i, (k, v, goal, sub) in enumerate(bars):
+        y = top + (i + 1) * LH + 6
+        filled = min(nb, round(nb * v / goal))
+        val = f"{v:,}" + ("d" if k == "longest streak" else "")
+        segs = [("│ ", "gd"), (f"{k:<16}", "c"), ("[", "gd"), ("█" * filled, "g"), ("░" * (nb - filled), "gd"), ("] ", "gd"), (f"{val:>6}", "a b"), (f"  {sub}", "gd")]
+        items.append(f'<g style="animation:type .9s steps({len(seg_text(segs))}) {.3 + i*.25:.2f}s both">{line(x, y, segs)}</g>')
+        alltxt += seg_text(segs)
+    # ASCII heatmap of the last year (public + private)
+    hy = top + (len(bars) + 2) * LH + 14
+    cal = st["calendar"]; weeks = -(-len(cal) // 7)
     nz = sorted(c for c in cal if c)
     q = [nz[int(len(nz) * f)] for f in (.25, .5, .75)] if nz else [1, 2, 3]
-    heat = ["#f1f5f9", "#e0e7ff", "#a5b4fc", "#6366f1", "#4338ca"]
-    cells, months, last_m = [], [], None
-    for i, c in enumerate(cal):
-        wk, dy = divmod(i, 7); d = start + timedelta(days=i)
-        lv = 0 if c == 0 else 1 + sum(c > t for t in q)
-        today = ' class="today"' if i == len(cal) - 1 else ""
-        cells.append(f'<rect{today} x="{gx + wk*step:.0f}" y="{gy + dy*step:.0f}" width="{cell}" height="{cell}" rx="4" fill="{heat[lv]}"/>')
-        if dy == 0 and d.month != last_m and d.day <= 7:
-            if wk < weeks - 2:
-                months.append(f'<text class="mo" x="{gx + wk*step:.0f}" y="{gy - 10}">{d.strftime("%b")}</text>')
-            last_m = d.month
-    cols_svg = []
+    glyph = ["·", "░", "▒", "▓", "█"]
+    shade = [GREEN_LO, "#14592c", GREEN_DIM, GREEN, GREEN_HI]
+    hx = x + 6 * CW
+    cw2 = (W - hx - 40) / weeks
+    start = date.fromisoformat(st["calendar_start"])
+    mon, last = [], None
     for wk in range(weeks):
-        cols_svg.append(f'<g class="col" style="animation-delay:{.2 + wk*.022:.3f}s">{"".join(cells[wk*7:wk*7+7])}</g>')
-    hy = gy + 7 * step
-    heat_legend = "".join(f'<rect x="{W - 32 - 50 - (5 - i)*15 + 4}" y="{hy + 8}" width="11" height="11" rx="3" fill="{heat[i]}"/>' for i in range(5))
-    heat_svg = (f'{"".join(months)}{"".join(cols_svg)}'
-                f'<clipPath id="hm"><rect x="{gx:.0f}" y="{gy}" width="{weeks*step - gap}" height="{7*step - gap}"/></clipPath>'
-                f'<g clip-path="url(#hm)"><rect x="{gx - 120:.0f}" y="{gy}" width="120" height="{7*step}" fill="url(#glint)" opacity=".35">'
-                f'<animate attributeName="x" values="{gx - 120:.0f};{W}" dur="5s" begin="1.6s" repeatCount="indefinite"/></rect></g>'
-                f'<text class="s" x="{W - 32 - 50 - 5*15 - 4}" y="{hy + 18}" text-anchor="end">Less</text>{heat_legend}'
-                f'<text class="s" x="{W - 32}" y="{hy + 18}" text-anchor="end">More</text>'
-                f'<text class="s" x="{gx:.0f}" y="{hy + 18}">best day {st["best_day"]} · current streak {st["streak_current"]}d</text>')
-    kpis = [(f"{st['year_contributions']:,}", "Contributions", "last 12 months"),
-            (f"{st['commits']:,}", "Commits", f"since {st['since']}"),
-            (f"{st['prs_merged']:,}", "PRs merged", "all repositories"),
-            (f"{st['repos']:,}", "Repositories", f"{st['private_repos']} private"),
-            (f"{st['streak_longest']}d", "Longest streak", f"current {st['streak_current']}d")]
-    langs = [l for l in st["languages"] if l["pct"] >= .5][:5]
-    tot = sum(l["pct"] for l in langs) or 1
-    cols = [INDIGO, VIOLET, CYAN, EMERALD, AMBER]
-    label, upd = "Incl. private & org repos", f"updated {st['updated']}"
-    legend = "".join(f"{l['name']}{l['pct']:g}%" for l in langs)
-    css = fonts_css({("Geist", 600): "".join(k[0] for k in kpis), ("Geist", 500): label + "".join(k[1] for k in kpis) + legend,
-                     ("GeistMono", 400): upd + "".join(k[2] for k in kpis) + legend + "JanFebMarAprMayJunJulAugSepOctNovDec LessMore best day current streak"}) + f"""
-    .v{{font:600 40px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-1.2px}} .k{{font:500 14px 'Geist',sans-serif;fill:{TEXT}}}
-    .s{{font:400 12.5px 'GeistMono',monospace;fill:{MUTED}}} .lbl{{font:500 12.5px 'Geist',sans-serif;fill:{TEXT}}}
-    .m{{font:400 12.5px 'GeistMono',monospace;fill:{MUTED}}} .lg{{font:500 13px 'Geist',sans-serif;fill:{TEXT}}}
-    .mo{{font:400 11px 'GeistMono',monospace;fill:{DIM}}}
-    .col{{animation:col .7s cubic-bezier(.2,.7,.2,1) both}} @keyframes col{{from{{opacity:0;transform:translateY(6px)}}to{{opacity:1;transform:none}}}}
-    .today{{animation:today 1.6s ease-in-out infinite}} @keyframes today{{50%{{opacity:.3}}}}
-    .kin{{animation:col .8s cubic-bezier(.2,.7,.2,1) both}}
-    .grow{{animation:grow 1.2s cubic-bezier(.2,.7,.2,1) both;transform-origin:32px 0;animation-delay:.9s}} @keyframes grow{{from{{transform:scaleX(0)}}to{{transform:none}}}}"""
-    cw = (W - 64) / len(kpis)
-    kp = []
-    for i, (v, k, sub) in enumerate(kpis):
-        x = 32 + i * cw
-        sep = f'<line x1="{x:.0f}" y1="92" x2="{x:.0f}" y2="176" stroke="{LINE}"/>' if i else ""
-        pad = 0 if i == 0 else 24
-        kp.append(f'<g class="kin" style="animation-delay:{.1 + i*.08:.2f}s">{sep}<text class="v" x="{x + pad:.0f}" y="128">{escape(v)}</text>'
-                  f'<text class="k" x="{x + pad:.0f}" y="154">{escape(k)}</text><text class="s" x="{x + pad:.0f}" y="174">{escape(sub)}</text></g>')
-    seg, leg, x, lx, bw = [], [], 32, 32, W - 64
-    for i, l in enumerate(langs):
-        w = bw * l["pct"] / tot
-        seg.append(f'<rect x="{x:.1f}" y="422" width="{max(w - 3, 2):.1f}" height="10" rx="3" fill="{cols[i]}"/>')
-        x += w
-        leg.append(f'<circle cx="{lx + 4}" cy="{460}" r="4" fill="{cols[i]}"/><text class="lg" x="{lx + 16}" y="464.5">{escape(l["name"])}'
-                   f'<tspan class="m" dx="6">{l["pct"]:g}%</tspan></text>')
-        lx += tw(l["name"], 13) + tw(f"{l['pct']:g}%", 12.5, True) + 50
-    lw = tw(label, 12.5) + 40
-    body = f"""
-    <defs><clipPath id="sc"><rect width="{W}" height="{H}" rx="18"/></clipPath></defs>
-    <g clip-path="url(#sc)">{card(W, H, 18)}
-      <ellipse cx="{W-60}" cy="10" rx="220" ry="90" fill="{INDIGO}" opacity=".07" filter="url(#blur)"/>
-      <rect width="{W}" height="{H}" fill="url(#dots)" opacity=".5"/></g>
-    <rect x="32" y="30" width="{lw:.0f}" height="28" rx="14" fill="{SURFACE}" stroke="{LINE}"/>
-    <circle cx="47" cy="44" r="3.5" fill="{EMERALD}"/><text class="lbl" x="58" y="48.5">{escape(label)}</text>
-    <text class="m" x="{W-32}" y="48.5" text-anchor="end">{escape(upd)}</text>
-    {''.join(kp)}
-    <line x1="32" y1="196.5" x2="{W-32}" y2="196.5" stroke="{LINE}"/>
-    {heat_svg}
-    <rect x="32" y="422" width="{bw}" height="10" rx="5" fill="{SURFACE}"/>
-    <g class="grow">{''.join(seg)}</g>
-    {''.join(leg)}"""
-    write("stats.svg", svg(W, H, body, css, "GitHub stats incl. private & org repos: " +
-                           ", ".join(f"{v} {k.lower()}" for v, k, _ in kpis)))
+        d = start + timedelta(days=wk * 7)
+        if d.month != last and wk < weeks - 2:
+            mon.append(f'<text class="t gd" x="{hx + wk*cw2:.0f}" y="{hy}" style="font-size:11px">{d.strftime("%b")}</text>'); last = d.month
+    heat = []
+    for wk in range(weeks):
+        col = []
+        for dy in range(7):
+            i = wk * 7 + dy
+            if i >= len(cal):
+                break
+            c = cal[i]; lv = 0 if c == 0 else 1 + sum(c > t for t in q)
+            col.append(f'<rect x="{hx + wk*cw2:.1f}" y="{hy + 8 + dy*17}" width="{cw2 - 4:.1f}" height="13" fill="{shade[lv]}"' + (' opacity=".5"' if lv == 0 else "") + "/>")
+        heat.append(f'<g style="animation:show .2s {.8 + wk*.025:.3f}s both">{"".join(col)}</g>')
+    days = "".join(f'<text class="t gd" x="{x}" y="{hy + 20 + d*17}" style="font-size:11px">{n}</text>' for d, n in ((1, "Mon"), (3, "Wed"), (5, "Fri")))
+    ly = hy + 20 + 7 * 17 + 12
+    leg = [("less", "gd"), (" " * 15, ""), ("more", "gd"), (f"     best day {st['best_day']} · {st['contributions']:,} contributions all-time", "gd")]
+    legend = line(x, ly, leg) + "".join(f'<rect x="{x + (5 + i*2.3) * CW:.1f}" y="{ly - 11}" width="12" height="12" fill="{c}"/>' for i, c in enumerate(shade))
+    alltxt += "MonWedFriJanFebMarAprMayJunJulAugSepOctNovDec" + seg_text(leg)
+    # Languages
+    ly2 = ly + LH + 18
+    lang_items = []
+    for i, l in enumerate([l for l in st["languages"] if l["pct"] >= .5][:5]):
+        filled = max(1, round(60 * l["pct"] / 100))
+        segs = [("│ ", "gd"), (f"{l['name']:<16}", "c"), ("█" * filled, "a" if i == 0 else "g"), ("░" * (60 - filled), "gd"), (f" {l['pct']:>5.1f}%", "a b")]
+        lang_items.append(f'<g style="animation:type .8s steps({len(seg_text(segs))}) {2 + i*.2:.2f}s both">{line(x, ly2 + i*LH, segs)}</g>')
+        alltxt += seg_text(segs)
+    nl = len(lang_items)
+    # Sparkline of weekly totals
+    wk_tot = [sum(cal[i:i + 7]) for i in range(0, len(cal), 7)]
+    mx = max(wk_tot) or 1
+    spark = "".join("▁▂▃▄▅▆▇█"[min(7, int(v / mx * 7.999))] if v else " " for v in wk_tot)
+    sy = ly2 + nl * LH + 8
+    sp = [("│ ", "gd"), (f"{'weekly trend':<16}", "c"), (spark, "g"), (f"  peak {mx}/wk", "a")]
+    alltxt += seg_text(sp)
+    end = line(x, sy + LH, [("╰" + "─" * inner + "╯", "gd")])
+    H = sy + LH + 30
+    lvcss = "".join(f".lv{i}{{fill:{c}}}" for i, c in enumerate(shade))
+    body = ("".join(items) + "".join(mon) + days + "".join(heat) + f'<g style="animation:show .3s 1.8s both">{legend}</g>' + "".join(lang_items) +
+            f'<g style="animation:type 1.2s steps({len(seg_text(sp))}) 3s both">{line(x, sy, sp)}</g>' + end)
+    css = fonts_css({"JB": alltxt + "╰─│╮", "JBB": alltxt}) + lvcss
+    write("stats.svg", svg(W, H, window(W, H, "./stats --include-private", body), css,
+                           f"GitHub activity incl. private repos: {st['year_contributions']:,} contributions in 12 months, {st['commits']:,} commits, "
+                           f"{st['prs_merged']} PRs merged, {st['repos']} repositories ({st['private_repos']} private)"))
 
 
-# ── 8. ACHIEVEMENTS (tiered trophies from stats.json) ─────────────────────
+# ── 8. ACHIEVEMENTS as an unlock log ──────────────────────────────────────
 def achievements():
     if not STATS:
         return
@@ -467,96 +449,97 @@ def achievements():
 
     def tier(v, s_, a_, b_):
         return "S" if v >= s_ else "A" if v >= a_ else "B" if v >= b_ else "C"
-
-    def short(v):
-        return f"{v/1000:.1f}k".replace(".0k", "k") if v >= 1000 else str(v)
     nlang = len([l for l in st["languages"] if l["pct"] >= .5])
-    items = [
-        ("Committer", short(st["commits"]), "commits", tier(st["commits"], 2000, 1000, 300)),
-        ("Shipper", short(st["prs_merged"]), "PRs merged", tier(st["prs_merged"], 500, 200, 50)),
-        ("Builder", short(st["repos"]), "repositories", tier(st["repos"], 100, 50, 20)),
-        ("Under NDA", short(st["private_repos"]), "private repos", tier(st["private_repos"], 30, 15, 5)),
-        ("Marathon", f"{st['streak_longest']}d", "longest streak", tier(st["streak_longest"], 60, 30, 14)),
-        ("Polyglot", str(nlang), "languages", tier(nlang, 6, 4, 3)),
-    ]
-    W, H, n, gap = 1200, 236, len(items), 16
-    cw = (W - gap * (n - 1)) / n
-    tcol = {"S": AMBER, "A": VIOLET, "B": INDIGO, "C": CYAN}
-    css = fonts_css({("Geist", 600): "".join(i[1] + i[3] for i in items), ("Geist", 500): "".join(i[0] for i in items),
-                     ("GeistMono", 400): "".join(i[2] for i in items)}) + f"""
-    .v{{font:600 30px 'Geist',sans-serif;fill:{TEXT};letter-spacing:-.8px}} .k{{font:500 15px 'Geist',sans-serif;fill:{TEXT}}}
-    .s{{font:400 11.5px 'GeistMono',monospace;fill:{MUTED}}} .t{{font:600 15px 'Geist',sans-serif}}
-    .pop{{animation:pop .7s cubic-bezier(.2,.7,.2,1.3) both}} @keyframes pop{{from{{opacity:0;transform:scale(.85) translateY(8px)}}to{{opacity:1;transform:none}}}}
-    .spin{{animation:spin 8s linear infinite;transform-box:fill-box;transform-origin:center}} @keyframes spin{{to{{transform:rotate(360deg)}}}}"""
-    out = []
-    for i, (k, v, sub, t) in enumerate(items):
-        x, c, cx = i * (cw + gap), tcol[t], cw / 2
-        out.append(f"""<g transform="translate({x:.0f},0)"><g class="pop" style="animation-delay:{i*.09:.2f}s;transform-origin:{cx:.0f}px 100px">
-          <defs><clipPath id="ac{i}"><rect width="{cw:.0f}" height="{H}" rx="16"/></clipPath></defs>
-          <g clip-path="url(#ac{i})">{card(round(cw), H, 16, dur=7 + i)}{tracer(round(cw), H, 16, dur=8, phase=i*1.3)}
-            <ellipse cx="{cx:.0f}" cy="40" rx="80" ry="50" fill="{c}" opacity=".1" filter="url(#blur)"/></g>
-          <circle cx="{cx:.0f}" cy="66" r="34" fill="{c}" fill-opacity=".08"/>
-          <circle class="spin" cx="{cx:.0f}" cy="66" r="34" fill="none" stroke="{c}" stroke-width="2" stroke-dasharray="60 154" stroke-linecap="round"/>
-          <circle cx="{cx:.0f}" cy="66" r="25" fill="{CARD}" stroke="{c}" stroke-opacity=".35"/>
-          <text class="t" x="{cx:.0f}" y="71.5" text-anchor="middle" fill="{c}">{t}</text>
-          <text class="v" x="{cx:.0f}" y="146" text-anchor="middle">{escape(v)}</text>
-          <text class="k" x="{cx:.0f}" y="176" text-anchor="middle">{escape(k)}</text>
-          <text class="s" x="{cx:.0f}" y="200" text-anchor="middle">{escape(sub)}</text></g></g>""")
-    write("achievements.svg", svg(W, H, "".join(out), css,
-                                  "Achievements: " + ", ".join(f"{k} ({v} {s_}, tier {t})" for k, v, s_, t in items)))
+    items = [("COMMITTER", f"{st['commits']:,} commits", tier(st["commits"], 2000, 1000, 300)),
+             ("SHIPPER", f"{st['prs_merged']:,} PRs merged", tier(st["prs_merged"], 500, 200, 50)),
+             ("BUILDER", f"{st['repos']} repositories", tier(st["repos"], 100, 50, 20)),
+             ("UNDER NDA", f"{st['private_repos']} private repos", tier(st["private_repos"], 30, 15, 5)),
+             ("MARATHON", f"{st['streak_longest']}-day streak", tier(st["streak_longest"], 60, 30, 14)),
+             ("POLYGLOT", f"{nlang} languages", tier(nlang, 6, 4, 3))]
+    tcol = {"S": AMBER, "A": GREEN, "B": CYAN, "C": TEXT}
+    top, x = 66, 28
+    H = top + len(items) * (LH + 6) + 14
+    out, alltxt = [], ""
+    for i, (k, d, t) in enumerate(items):
+        y = top + i * (LH + 6)
+        segs = [(f"[{st['updated']} 00:0{i}:00] ", "gd"), ("✓ ACHIEVEMENT UNLOCKED ", "g b"), ("▸ ", "gd"), (f"{k:<11}", "gh b"), (f"{d:<24}", ""), ("tier ", "gd")]
+        alltxt += seg_text(segs) + "SABC[]"
+        tx = x + len(seg_text(segs)) * CW
+        c = tcol[t]
+        out.append(f'<g style="animation:show .2s {.3 + i*.35:.2f}s both">{line(x, y, segs)}'
+                   f'<rect x="{tx - 4:.0f}" y="{y - 15}" width="{CW*3 + 8:.0f}" height="21" fill="{c}" opacity=".15" stroke="{c}"><animate attributeName="opacity" values=".1;.35;.1" dur="2s" begin="{i*.3:.1f}s" repeatCount="indefinite"/></rect>'
+                   f'<text class="t b" x="{tx:.0f}" y="{y}" style="fill:{c}">[{t}]</text></g>')
+    css = fonts_css({"JB": alltxt, "JBB": alltxt})
+    write("achievements.svg", svg(W, H, window(W, H, "tail /var/log/achievements.log", "".join(out)), css,
+                                  "Achievements: " + ", ".join(f"{k} ({d}, tier {t})" for k, d, t in items)))
 
 
-# ── 9. WEEKLY ACTIVITY CHART ──────────────────────────────────────────────
+# ── 9. WEEKLY BAR CHART ───────────────────────────────────────────────────
 def activity():
     if not STATS:
         return
-    from datetime import date, timedelta
-    cal, start = STATS["calendar"], date.fromisoformat(STATS["calendar_start"])
-    weeks = [sum(cal[i:i + 7]) for i in range(0, len(cal), 7)]
-    W, H = 1200, 340
-    x0, x1, y0, y1 = 64, W - 40, 70, H - 60
-    nice = max(40, -(-max(weeks) // 40) * 40)
-    pts = [(x0 + i * (x1 - x0) / (len(weeks) - 1), y1 - w * (y1 - y0) / nice) for i, w in enumerate(weeks)]
-    line = f"M{pts[0][0]:.1f},{pts[0][1]:.1f}"
-    for (ax, ay), (bx, by) in zip(pts, pts[1:]):
-        mx = (ax + bx) / 2
-        line += f" C{mx:.1f},{ay:.1f} {mx:.1f},{by:.1f} {bx:.1f},{by:.1f}"
-    area = line + f" L{x1},{y1} L{x0},{y1} Z"
-    pk = max(range(len(weeks)), key=lambda i: weeks[i])
-    px, py = pts[pk]
-    grid = "".join(f'<line x1="{x0}" y1="{y1 - f*(y1-y0):.0f}" x2="{x1}" y2="{y1 - f*(y1-y0):.0f}" stroke="{LINE}" stroke-dasharray="3 5"/>'
-                   f'<text class="ax" x="{x0 - 12}" y="{y1 - f*(y1-y0) + 4:.0f}" text-anchor="end">{int(nice*f)}</text>'
-                   for f in (0, .25, .5, .75, 1))
-    months, last = [], None
-    for i in range(len(weeks)):
-        d = start + timedelta(days=i * 7)
-        if d.month != last and i < len(weeks) - 2:
-            months.append(f'<text class="ax" x="{pts[i][0]:.0f}" y="{y1 + 26}" text-anchor="middle">{d.strftime("%b")}</text>')
-            last = d.month
-    title, sub, peak = "Weekly contributions", "last 12 months · public + private", f"peak {weeks[pk]} / week"
-    css = fonts_css({("Geist", 600): title, ("GeistMono", 400): sub + peak + "JanFebMarAprMayJunJulAugSepOctNovDec"}) + f"""
-    .h{{font:600 18px 'Geist',sans-serif;fill:{TEXT}}} .sub{{font:400 12.5px 'GeistMono',monospace;fill:{MUTED}}}
-    .ax{{font:400 11px 'GeistMono',monospace;fill:{DIM}}} .pk{{font:400 12px 'GeistMono',monospace;fill:{TEXT}}}
-    .draw{{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .2s forwards}} @keyframes draw{{to{{stroke-dashoffset:0}}}}
-    .fade{{animation:fade 1.2s ease 1.4s both}} @keyframes fade{{from{{opacity:0}}to{{opacity:1}}}}
-    .ring{{animation:ring 2s ease-out 2.4s infinite;transform-box:fill-box;transform-origin:center}} @keyframes ring{{from{{transform:scale(1);opacity:.6}}to{{transform:scale(3.2);opacity:0}}}}
-    @media (prefers-reduced-motion: reduce){{.draw{{stroke-dashoffset:0}}}}"""
-    body = f"""
-    <defs><clipPath id="wc"><rect width="{W}" height="{H}" rx="18"/></clipPath>
-      <linearGradient id="fillg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{INDIGO}" stop-opacity=".28"/><stop offset="1" stop-color="{INDIGO}" stop-opacity="0"/></linearGradient></defs>
-    <g clip-path="url(#wc)">{card(W, H, 18)}<rect width="{W}" height="{H}" fill="url(#dots)" opacity=".5"/></g>
-    <text class="h" x="32" y="40">{title}</text><text class="sub" x="{W - 32}" y="40" text-anchor="end">{escape(sub)}</text>
-    {grid}{''.join(months)}
-    <path class="fade" d="{area}" fill="url(#fillg)"/>
-    <path class="draw" d="{line}" fill="none" stroke="url(#aurora)" stroke-width="2.5" stroke-linecap="round" pathLength="1"/>
-    <g class="fade"><circle class="ring" cx="{px:.1f}" cy="{py:.1f}" r="5" fill="{VIOLET}"/><circle cx="{px:.1f}" cy="{py:.1f}" r="5" fill="{VIOLET}" stroke="{CARD}" stroke-width="2"/>
-      <text class="pk" x="{min(px + 12, W - 140):.0f}" y="{py - 12:.0f}">{escape(peak)}</text></g>"""
-    write("activity.svg", svg(W, H, body, css, f"Weekly contributions over the last 12 months, peak {weeks[pk]} per week"))
+    cal = STATS["calendar"]
+    wk = [sum(cal[i:i + 7]) for i in range(0, len(cal), 7)]
+    mx = max(wk) or 1
+    rows, x, top = 12, 28, 70
+    bw = (W - 2 * x - 60) / len(wk)
+    H = top + rows * 16 + 64
+    out = []
+    for r in range(0, rows + 1, 3):
+        v = round(mx * (rows - r) / rows)
+        out.append(f'<text class="t gd" x="{x + 40}" y="{top + r*16 + 4}" text-anchor="end" style="font-size:11px">{v}</text>'
+                   f'<line x1="{x + 50}" y1="{top + r*16}" x2="{W - x}" y2="{top + r*16}" stroke="{GREEN_LO}" stroke-dasharray="2 6"/>')
+    for i, v in enumerate(wk):
+        h = v / mx * rows * 16
+        bx = x + 60 + i * bw
+        c = GREEN_HI if v == mx else GREEN if v > mx * .5 else GREEN_DIM
+        out.append(f'<rect x="{bx:.1f}" y="{top + rows*16 - h:.1f}" width="{bw - 4:.1f}" height="{h:.1f}" fill="{c}" opacity=".9" '
+                   f'style="transform-box:fill-box;transform-origin:bottom;animation:grow .6s cubic-bezier(.2,.7,.2,1) {.2 + i*.03:.2f}s both"/>')
+    label = f"weekly contributions · last 12 months · public + private · peak {mx}/wk"
+    out.append(line(x + 60, top + rows * 16 + 30, [(label, "gd")]))
+    css = fonts_css({"JB": label}) + "@keyframes grow{from{transform:scaleY(0)}to{transform:none}}"
+    write("activity.svg", svg(W, H, window(W, H, "plot --weekly", "".join(out)), css, f"Weekly contributions over the last 12 months, peak {mx} per week"))
+
+
+# ── 10. DIVIDER + FOOTER ──────────────────────────────────────────────────
+def divider():
+    H = 24
+    body = (f'<rect x="0" y="11.5" width="{W}" height="1" fill="{GREEN_LO}"/>'
+            f'<rect x="-200" y="11" width="200" height="2" fill="{GREEN}" filter="url(#glow)"><animate attributeName="x" values="-200;{W}" dur="4s" repeatCount="indefinite"/></rect>')
+    write("divider.svg", svg(W, H, body, "", "divider"))
+
+
+def footer():
+    H = 330
+    x = 32
+    steps = [("Initiating secure channel", "OK"), ("Negotiating handshake (TLS 1.3)", "OK"), ("Routing to inbox", "OK")]
+    out, t = [], .3
+    for s, ok in steps:
+        segs = [("> ", "a"), (s + " " + "." * (40 - len(s)) + " ", "gd"), (f"[{ok}]", "g b")]
+        out.append(appear(x, 66 + len(out) * LH, segs, t)); t += .45
+    big = "LET'S BUILD SOMETHING INTELLIGENT"
+    by = 66 + 3 * LH + 60
+    out.append(f'<g style="animation:show .4s {t:.2f}s both"><text class="vt g" x="{x}" y="{by}">{big}</text></g>')
+    bw = len(big) * 46 * .4
+    out.append(f'<rect class="blink" x="{x + bw + 8:.0f}" y="{by - 34}" width="20" height="38" fill="{GREEN}"/>')
+    sub = "Hiring an engineer, or need an AI product, app or site built and ranked? I reply within a day."
+    out.append(appear(x, by + 40, [(sub, "gh")], t + .3))
+    ticker = "   ◆   ".join(s["title"].upper() for s in CFG["services"]) + "   ◆   "
+    tkw = len(ticker) * 12 * .6
+    tk = escape(ticker * (int(W / tkw) + 2))
+    out.append(f'<g class="mq"><text class="t gd" x="0" y="{H - 16}" style="font-size:12px">{tk}</text></g>')
+    css = fonts_css({"JB": "".join(s for s, _ in steps) + ".[]OK" + sub + ticker, "JBB": "[OK]", "VT": big}) + f"""
+    .vt{{font:400 46px 'VT',monospace;letter-spacing:0}}
+    .mq{{animation:mq {tkw/50:.1f}s linear infinite}} @keyframes mq{{to{{transform:translateX(-{tkw:.1f}px)}}}}"""
+    body = "".join(out) + f'<rect x="0" y="{H - 38}" width="{W}" height="1" fill="{LINE}"/>'
+    write("footer.svg", svg(W, H, window(W, H, "./contact.sh --secure", body, rain=True), css, f"{big} — {sub}"))
 
 
 if __name__ == "__main__":
     print("Building assets…")
-    header(); terminal(); services(); divider(); footer(); stats(); achievements(); activity()
-    for s in SECTIONS: section(*s)
-    for i, p in enumerate(CFG["projects"]): project(p, i)
+    header(); terminal(); services(); stack(); stats(); achievements(); activity(); divider(); footer()
+    for s in SECTIONS:
+        section(*s)
+    for i, p in enumerate(CFG["projects"]):
+        project(p, i)
     print("Done.")

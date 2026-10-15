@@ -1,11 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="24" viewBox="0 0 1200 24" role="img" aria-label="divider"><title>divider</title><style>@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style><defs>
-<linearGradient id="aurora" x1="0" x2="1"><stop offset="0" stop-color="#4f46e5"/><stop offset=".5" stop-color="#7c3aed"/><stop offset="1" stop-color="#0891b2"/></linearGradient>
-<linearGradient id="hair" x1="0" x2="1"><stop offset="0" stop-color="#a1a1aa" stop-opacity="0"/><stop offset=".5" stop-color="#a1a1aa" stop-opacity=".55"/><stop offset="1" stop-color="#a1a1aa" stop-opacity="0"/></linearGradient>
-<linearGradient id="glint" x1="0" x2="1"><stop offset="0" stop-color="#7c3aed" stop-opacity="0"/><stop offset=".5" stop-color="#7c3aed" stop-opacity=".6"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></linearGradient>
-<linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#09090b"/><stop offset="1" stop-color="#3f3f46"/></linearGradient>
-<linearGradient id="shine" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="260" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/><animateTransform attributeName="gradientTransform" type="translate" values="-400 0;1600 0" dur="6s" repeatCount="indefinite"/></linearGradient>
-<filter id="blur" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="48"/></filter>
-<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
-<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#18181b" opacity=".08"/></pattern>
-</defs><rect x="0" y="11.5" width="1200" height="1" fill="url(#hair)"/>
-    <rect x="-160" y="11" width="160" height="2" rx="1" fill="url(#aurora)"><animate attributeName="x" values="-160;1200" dur="6s" repeatCount="indefinite"/></rect></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="24" viewBox="0 0 1200 24" role="img" aria-label="divider"><title>divider</title><style>
+.t{font:400 14px 'JB',monospace;fill:#c8ffd4;white-space:pre} .b{font-family:'JBB','JB',monospace;font-weight:700}
+.g{fill:#39ff7a} .gh{fill:#b6ffc9} .gd{fill:#1f9e4a} .a{fill:#ffb347} .c{fill:#4df3ff} .r{fill:#ff5f56} .m{fill:#ff2a6d}
+.flicker{animation:flicker 7s infinite steps(1)}
+@keyframes flicker{0%,100%{opacity:1}41%{opacity:.93}42%{opacity:1}77%{opacity:.96}78%{opacity:1}}
+.blink{animation:blink 1s steps(1) infinite} @keyframes blink{50%{opacity:0}}
+@keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes show{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style><defs>
+<filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/>
+  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="bloom" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5" result="b"/>
+  <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="2" fill="#000" opacity=".35"/></pattern>
+<radialGradient id="vignette" cx=".5" cy=".5" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".75"/></radialGradient>
+<linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#39ff7a" stop-opacity="0"/><stop offset=".5" stop-color="#39ff7a" stop-opacity=".07"/><stop offset="1" stop-color="#39ff7a" stop-opacity="0"/></linearGradient>
+</defs><rect x="0" y="11.5" width="1200" height="1" fill="#0f3d1d"/><rect x="-200" y="11" width="200" height="2" fill="#39ff7a" filter="url(#glow)"><animate attributeName="x" values="-200;1200" dur="4s" repeatCount="indefinite"/></rect></svg>
