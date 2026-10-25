@@ -1,7 +1,7 @@
 {
- "updated": "2026-10-24",
+ "updated": "2026-10-25",
  "since": 2024,
- "year_contributions": 1501,
+ "year_contributions": 1500,
  "contributions": 1806,
  "commits": 1219,
  "prs": 491,
@@ -11,13 +11,13 @@
  "repos": 102,
  "private_repos": 34,
  "stars": 10,
- "streak_current": 2,
+ "streak_current": 0,
  "streak_longest": 35,
  "best_day": 60,
  "languages": [
   {
    "name": "Python",
-   "pct": 60.9
+   "pct": 60.8
   },
   {
    "name": "TypeScript",
@@ -45,13 +45,6 @@
   }
  ],
  "calendar": [
-  0,
-  0,
-  0,
-  1,
-  0,
-  0,
-  0,
   0,
   0,
   0,
@@ -415,7 +408,8 @@
   0,
   3,
   1,
+  0,
   0
  ],
- "calendar_start": "2025-10-19"
+ "calendar_start": "2025-10-26"
 }
