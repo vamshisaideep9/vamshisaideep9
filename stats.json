@@ -1,35 +1,35 @@
 {
- "updated": "2026-11-03",
+ "updated": "2026-11-04",
  "since": 2024,
- "year_contributions": 1678,
- "contributions": 1984,
+ "year_contributions": 1684,
+ "contributions": 1990,
  "commits": 1250,
- "prs": 572,
- "prs_merged": 544,
+ "prs": 577,
+ "prs_merged": 553,
  "reviews": 0,
- "issues": 64,
+ "issues": 65,
  "repos": 104,
  "private_repos": 36,
  "stars": 10,
- "streak_current": 1,
+ "streak_current": 3,
  "streak_longest": 35,
  "best_day": 115,
  "languages": [
   {
    "name": "Python",
-   "pct": 60.0
+   "pct": 59.6
   },
   {
    "name": "TypeScript",
-   "pct": 33.8
+   "pct": 34.0
   },
   {
    "name": "JavaScript",
-   "pct": 4.0
+   "pct": 4.1
   },
   {
    "name": "Kotlin",
-   "pct": 1.7
+   "pct": 1.9
   },
   {
    "name": "PLpgSQL",
@@ -37,7 +37,7 @@
   },
   {
    "name": "Java",
-   "pct": 0.1
+   "pct": 0.0
   },
   {
    "name": "Astro",
@@ -411,7 +411,8 @@
   10,
   0,
   4,
-  0
+  2,
+  4
  ],
  "calendar_start": "2025-11-02"
 }
