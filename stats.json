@@ -1,27 +1,27 @@
 {
- "updated": "2026-11-07",
+ "updated": "2026-11-08",
  "since": 2024,
- "year_contributions": 1743,
- "contributions": 2049,
+ "year_contributions": 1748,
+ "contributions": 2063,
  "commits": 1250,
- "prs": 623,
- "prs_merged": 592,
+ "prs": 636,
+ "prs_merged": 611,
  "reviews": 0,
- "issues": 78,
+ "issues": 79,
  "repos": 104,
  "private_repos": 36,
  "stars": 10,
- "streak_current": 6,
+ "streak_current": 7,
  "streak_longest": 35,
  "best_day": 115,
  "languages": [
   {
    "name": "Python",
-   "pct": 58.3
+   "pct": 58.1
   },
   {
    "name": "TypeScript",
-   "pct": 34.4
+   "pct": 34.5
   },
   {
    "name": "JavaScript",
@@ -45,13 +45,6 @@
   }
  ],
  "calendar": [
-  0,
-  4,
-  1,
-  0,
-  2,
-  2,
-  0,
   0,
   0,
   3,
@@ -415,7 +408,8 @@
   12,
   18,
   31,
-  2
+  10,
+  6
  ],
- "calendar_start": "2025-11-02"
+ "calendar_start": "2025-11-09"
 }
