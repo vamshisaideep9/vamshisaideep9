@@ -1,27 +1,27 @@
 {
- "updated": "2026-11-11",
+ "updated": "2026-11-12",
  "since": 2024,
- "year_contributions": 1871,
- "contributions": 2186,
+ "year_contributions": 1897,
+ "contributions": 2212,
  "commits": 1267,
- "prs": 711,
- "prs_merged": 686,
+ "prs": 733,
+ "prs_merged": 701,
  "reviews": 0,
- "issues": 110,
+ "issues": 114,
  "repos": 104,
  "private_repos": 36,
  "stars": 10,
- "streak_current": 10,
+ "streak_current": 11,
  "streak_longest": 35,
  "best_day": 115,
  "languages": [
   {
    "name": "Python",
-   "pct": 57.3
+   "pct": 57.1
   },
   {
    "name": "TypeScript",
-   "pct": 34.4
+   "pct": 34.6
   },
   {
    "name": "JavaScript",
@@ -29,7 +29,7 @@
   },
   {
    "name": "Kotlin",
-   "pct": 3.2
+   "pct": 3.1
   },
   {
    "name": "PLpgSQL",
@@ -412,7 +412,8 @@
   23,
   48,
   51,
-  7
+  29,
+  4
  ],
  "calendar_start": "2025-11-09"
 }
