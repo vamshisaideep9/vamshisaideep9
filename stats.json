@@ -1,17 +1,17 @@
 {
- "updated": "2026-11-16",
+ "updated": "2026-11-17",
  "since": 2024,
- "year_contributions": 2028,
- "contributions": 2346,
+ "year_contributions": 2071,
+ "contributions": 2389,
  "commits": 1282,
- "prs": 838,
- "prs_merged": 766,
+ "prs": 881,
+ "prs_merged": 789,
  "reviews": 0,
  "issues": 128,
  "repos": 104,
  "private_repos": 36,
  "stars": 10,
- "streak_current": 15,
+ "streak_current": 16,
  "streak_longest": 35,
  "best_day": 115,
  "languages": [
@@ -21,11 +21,11 @@
   },
   {
    "name": "TypeScript",
-   "pct": 35.2
+   "pct": 35.4
   },
   {
    "name": "JavaScript",
-   "pct": 4.7
+   "pct": 4.6
   },
   {
    "name": "Kotlin",
@@ -410,7 +410,8 @@
   19,
   51,
   39,
-  8
+  29,
+  22
  ],
  "calendar_start": "2025-11-16"
 }
