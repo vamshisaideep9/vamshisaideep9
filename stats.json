@@ -1,17 +1,17 @@
 {
- "updated": "2026-11-21",
+ "updated": "2026-11-22",
  "since": 2024,
- "year_contributions": 2155,
- "contributions": 2473,
+ "year_contributions": 2160,
+ "contributions": 2482,
  "commits": 1284,
- "prs": 951,
- "prs_merged": 837,
+ "prs": 960,
+ "prs_merged": 842,
  "reviews": 0,
  "issues": 139,
  "repos": 105,
  "private_repos": 34,
  "stars": 10,
- "streak_current": 20,
+ "streak_current": 21,
  "streak_longest": 35,
  "best_day": 115,
  "languages": [
@@ -45,13 +45,6 @@
   }
  ],
  "calendar": [
-  0,
-  2,
-  2,
-  0,
-  0,
-  0,
-  0,
   0,
   0,
   0,
@@ -415,7 +408,8 @@
   24,
   18,
   15,
-  14
+  22,
+  1
  ],
- "calendar_start": "2025-11-16"
+ "calendar_start": "2025-11-23"
 }
