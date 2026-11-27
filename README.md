@@ -123,7 +123,7 @@
 
 **⚡ Recent GitHub activity**
 <!--START_SECTION:activity-->
-1. 💪 Opened PR [#114](https://github.com/vamshisaideep9/client1/pull/114) in [vamshisaideep9/client1](https://github.com/vamshisaideep9/client1)
+1. 🎉 Merged PR [#117](https://github.com/vamshisaideep9/client1/pull/117) in [vamshisaideep9/client1](https://github.com/vamshisaideep9/client1)
 <!--END_SECTION:activity-->
 
 </td>
